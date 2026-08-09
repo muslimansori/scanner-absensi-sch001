@@ -698,9 +698,11 @@ function bunyi(
 // API
 // ============================================================
 
-async function postApi(
-    data
-) {
+async function postApi(data) {
+
+    const mulaiBrowser =
+        performance.now();
+
 
     const form =
         new URLSearchParams();
@@ -748,11 +750,48 @@ async function postApi(
         await response.text();
 
 
+    const selesaiBrowser =
+        performance.now();
+
+
     try {
 
-        return JSON.parse(
-            text
+        const hasil =
+            JSON.parse(text);
+
+
+        hasil.total_ms =
+            Math.round(
+                selesaiBrowser -
+                mulaiBrowser
+            );
+
+
+        console.log(
+            "===== PERFORMANCE ====="
         );
+
+        console.log(
+            "Total browser:",
+            hasil.total_ms,
+            "ms"
+        );
+
+        console.log(
+            "Server:",
+            hasil.server_ms,
+            "ms"
+        );
+
+        console.log(
+            "Network/redirect kira-kira:",
+            hasil.total_ms -
+            hasil.server_ms,
+            "ms"
+        );
+
+
+        return hasil;
 
 
     } catch (e) {
