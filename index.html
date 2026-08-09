@@ -1,0 +1,1959 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Scanner Absensi SCH001</title>
+
+    <script
+        src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js">
+    </script>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #eef2f5;
+            font-family: Arial, sans-serif;
+            color: #1f2937;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow:
+                0 5px 18px
+                rgba(0,0,0,0.08);
+        }
+
+        .header {
+            background: #1a73e8;
+            color: white;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 16px;
+        }
+
+        .header h2 {
+            margin: 0 0 5px 0;
+        }
+
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #ccd1d8;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 13px;
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-logout {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            margin-top: 14px;
+        }
+
+        .mode-title {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        #modeAktif {
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            text-align: center;
+            font-size: 19px;
+            font-weight: bold;
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn-hadir {
+            background: #16a34a;
+            color: white;
+        }
+
+        .btn-terlambat {
+            background: #f59e0b;
+            color: #111827;
+        }
+
+        .mode-selected {
+            outline: 4px solid #111827;
+        }
+
+        #reader {
+            width: 100%;
+            overflow: hidden;
+            border-radius: 14px;
+            background: #111827;
+        }
+
+        #cameraInfo {
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        #hasil {
+            display: none;
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 15px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .hasil-success {
+            display: block !important;
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .hasil-info {
+            display: block !important;
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .hasil-error {
+            display: block !important;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .nama-siswa {
+            font-size: 21px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .status-besar {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 6px;
+        }
+
+        .manual-title {
+            margin-top: 0;
+        }
+
+        .helper {
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        .separator {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 18px 0;
+        }
+
+        #scannerSection {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            color: #6b7280;
+            font-weight: bold;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+
+    <!-- ===================================================== -->
+    <!-- LOGIN -->
+    <!-- ===================================================== -->
+
+    <section id="loginSection">
+
+        <div class="header">
+
+            <h2>📷 Scanner Absensi</h2>
+
+            <p>
+                Kartu Pelajar Digital SCH001
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>Login Petugas</h3>
+
+            <label>
+                PIN Scanner
+            </label>
+
+            <input
+                id="pinScanner"
+                type="password"
+                inputmode="numeric"
+                placeholder="Masukkan PIN"
+            >
+
+            <button
+                id="btnLogin"
+                class="btn-primary"
+                onclick="loginScanner()"
+            >
+                MASUK SCANNER
+            </button>
+
+            <div
+                id="loginInfo"
+                class="loading"
+                style="margin-top:15px; display:none;">
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ===================================================== -->
+    <!-- SCANNER -->
+    <!-- ===================================================== -->
+
+    <section id="scannerSection">
+
+
+        <div class="header">
+
+            <h2>
+                📷 Scanner Absensi
+            </h2>
+
+            <p>
+                SCH001 • Scanner Sekolah
+            </p>
+
+            <button
+                class="btn-logout"
+                onclick="logoutScanner()"
+            >
+                Logout
+            </button>
+
+        </div>
+
+
+
+        <!-- MODE QR -->
+
+        <div class="card">
+
+            <div class="mode-title">
+                MODE SCAN QR AKTIF
+            </div>
+
+
+            <div id="modeAktif">
+
+                🟢 HADIR
+
+            </div>
+
+
+            <div class="mode-grid">
+
+                <button
+                    id="btnHadir"
+                    class="btn-hadir mode-selected"
+                    onclick="pilihMode('HADIR')"
+                >
+                    🟢 HADIR
+                </button>
+
+
+                <button
+                    id="btnTerlambat"
+                    class="btn-terlambat"
+                    onclick="pilihMode('TERLAMBAT')"
+                >
+                    🟠 TERLAMBAT
+                </button>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- CAMERA -->
+
+        <div class="card">
+
+            <div id="cameraInfo">
+
+                📱 Kamera Depan
+
+            </div>
+
+
+            <div id="reader"></div>
+
+
+            <button
+                class="btn-secondary"
+                style="margin-top:12px;"
+                onclick="gantiKamera()"
+            >
+                🔄 Ganti Kamera
+            </button>
+
+
+            <div class="helper"
+                 style="margin-top:10px; text-align:center;">
+
+                Sodorkan QR kartu ke kotak kamera.
+                Tidak perlu menekan tombol setelah setiap scan.
+
+            </div>
+
+        </div>
+
+
+
+        <!-- RESULT -->
+
+        <div id="hasil"></div>
+
+
+
+        <!-- MANUAL -->
+
+        <div class="card">
+
+            <h3 class="manual-title">
+
+                ✍️ Input Manual
+
+            </h3>
+
+
+            <p class="helper">
+
+                Dipakai jika kartu rusak/tidak terbawa,
+                atau untuk mencatat Sakit dan Izin.
+
+            </p>
+
+
+            <label>
+                NISN / Student ID
+            </label>
+
+            <input
+                id="manualIdentifier"
+                type="text"
+                inputmode="numeric"
+                placeholder="Contoh: 0081234567"
+            >
+
+
+            <label>
+                Status
+            </label>
+
+            <select id="manualStatus">
+
+                <option value="SAKIT">
+                    SAKIT
+                </option>
+
+                <option value="IZIN">
+                    IZIN
+                </option>
+
+                <option value="HADIR">
+                    HADIR
+                </option>
+
+                <option value="TERLAMBAT">
+                    TERLAMBAT
+                </option>
+
+            </select>
+
+
+            <button
+                class="btn-primary"
+                onclick="catatManual()"
+            >
+                SIMPAN MANUAL
+            </button>
+
+        </div>
+
+
+
+        <!-- ALPHA -->
+
+        <div class="card">
+
+            <h3>
+                🛑 Rekap Alpha
+            </h3>
+
+            <p class="helper">
+
+                Jalankan setelah waktu absensi pagi selesai.
+                Siswa aktif yang belum memiliki status hari ini
+                akan dicatat ALPHA.
+
+            </p>
+
+
+            <button
+                class="btn-danger"
+                onclick="rekapAlpha()"
+            >
+                SELESAI ABSENSI — REKAP ALPHA
+            </button>
+
+        </div>
+
+
+    </section>
+
+</div>
+
+
+
+<script>
+
+
+// ============================================================
+// CONFIG
+// ============================================================
+
+
+// TEMPEL URL /exec YANG SUDAH API_ONLINE DI SINI
+
+const API_URL =
+    "https://script.google.com/macros/s/AKfycbwqJq_NouEf3kR2RApLQWcX3DZTxFVJ4p1Fig5sQPIeI4gMM2JrEqLcil4tnnNJUg2W3w/exec";
+
+
+const SCHOOL_ID =
+    "SCH001";
+
+
+
+// ============================================================
+// STATE
+// ============================================================
+
+let sessionToken =
+    "";
+
+
+let modeSekarang =
+    "HADIR";
+
+
+let kamera =
+    "user";
+
+
+let qrScanner =
+    null;
+
+
+let kameraAktif =
+    false;
+
+
+let sedangMengirim =
+    false;
+
+
+let kodeTerakhir =
+    "";
+
+
+let waktuKodeTerakhir =
+    0;
+
+
+let audioContext =
+    null;
+
+
+
+// ============================================================
+// AUDIO
+// ============================================================
+
+function initAudio() {
+
+    if (!audioContext) {
+
+        audioContext =
+            new (
+                window.AudioContext ||
+                window.webkitAudioContext
+            )();
+
+    }
+
+
+    if (
+        audioContext.state ===
+        "suspended"
+    ) {
+
+        audioContext.resume();
+
+    }
+
+}
+
+
+
+function beepSukses() {
+
+    bunyi(
+        880,
+        0.09
+    );
+
+}
+
+
+
+function beepInfo() {
+
+    bunyi(
+        620,
+        0.09
+    );
+
+}
+
+
+
+function beepGagal() {
+
+    bunyi(
+        240,
+        0.13
+    );
+
+
+    setTimeout(
+        () => bunyi(200, 0.13),
+        160
+    );
+
+}
+
+
+
+function bunyi(
+    frequency,
+    duration
+) {
+
+    try {
+
+        initAudio();
+
+
+        const oscillator =
+            audioContext
+                .createOscillator();
+
+
+        const gain =
+            audioContext
+                .createGain();
+
+
+        oscillator.frequency.value =
+            frequency;
+
+
+        oscillator.connect(
+            gain
+        );
+
+
+        gain.connect(
+            audioContext.destination
+        );
+
+
+        gain.gain.value =
+            0.15;
+
+
+        oscillator.start();
+
+
+        oscillator.stop(
+            audioContext.currentTime
+            +
+            duration
+        );
+
+
+    } catch (e) {
+
+        console.log(
+            "Audio tidak tersedia.",
+            e
+        );
+
+    }
+
+}
+
+
+
+// ============================================================
+// API
+// ============================================================
+
+async function postApi(
+    data
+) {
+
+    const form =
+        new URLSearchParams();
+
+
+    Object.keys(data)
+        .forEach(
+            key => {
+
+                if (
+                    data[key] !== undefined &&
+                    data[key] !== null
+                ) {
+
+                    form.append(
+                        key,
+                        data[key]
+                    );
+
+                }
+
+            }
+        );
+
+
+    const response =
+        await fetch(
+            API_URL,
+            {
+
+                method:
+                    "POST",
+
+                body:
+                    form,
+
+                redirect:
+                    "follow"
+
+            }
+        );
+
+
+    const text =
+        await response.text();
+
+
+    try {
+
+        return JSON.parse(
+            text
+        );
+
+
+    } catch (e) {
+
+        throw new Error(
+            "Backend tidak mengembalikan JSON."
+        );
+
+    }
+
+}
+
+
+
+// ============================================================
+// LOGIN
+// ============================================================
+
+async function loginScanner() {
+
+    initAudio();
+
+
+    const pin =
+        document
+            .getElementById(
+                "pinScanner"
+            )
+            .value
+            .trim();
+
+
+    const info =
+        document
+            .getElementById(
+                "loginInfo"
+            );
+
+
+    const btn =
+        document
+            .getElementById(
+                "btnLogin"
+            );
+
+
+    if (!pin) {
+
+        alert(
+            "Masukkan PIN scanner."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !API_URL.startsWith(
+            "https://script.google.com/"
+        )
+    ) {
+
+        alert(
+            "API_URL belum diisi dengan URL /exec."
+        );
+
+        return;
+
+    }
+
+
+    btn.disabled =
+        true;
+
+
+    info.style.display =
+        "block";
+
+
+    info.textContent =
+        "Menghubungi backend...";
+
+
+    try {
+
+        const hasil =
+            await postApi({
+
+                action:
+                    "login_scanner",
+
+                school_id:
+                    SCHOOL_ID,
+
+                pin:
+                    pin
+
+            });
+
+
+        if (!hasil.ok) {
+
+            info.textContent =
+                "❌ " +
+                hasil.message;
+
+            beepGagal();
+
+            return;
+
+        }
+
+
+        sessionToken =
+            hasil.session_token;
+
+
+        document
+            .getElementById(
+                "pinScanner"
+            )
+            .value =
+            "";
+
+
+        document
+            .getElementById(
+                "loginSection"
+            )
+            .style.display =
+            "none";
+
+
+        document
+            .getElementById(
+                "scannerSection"
+            )
+            .style.display =
+            "block";
+
+
+        pilihMode(
+            "HADIR"
+        );
+
+
+        beepSukses();
+
+
+        await mulaiKamera();
+
+
+    } catch (err) {
+
+        console.error(err);
+
+
+        info.textContent =
+            "❌ Gagal terhubung ke backend.";
+
+
+        beepGagal();
+
+    } finally {
+
+        btn.disabled =
+            false;
+
+    }
+
+}
+
+
+
+// ============================================================
+// LOGOUT
+// ============================================================
+
+async function logoutScanner() {
+
+    try {
+
+        if (
+            sessionToken
+        ) {
+
+            await postApi({
+
+                action:
+                    "logout_scanner",
+
+                school_id:
+                    SCHOOL_ID,
+
+                session_token:
+                    sessionToken
+
+            });
+
+        }
+
+    } catch (e) {
+
+        console.log(e);
+
+    }
+
+
+    sessionToken =
+        "";
+
+
+    await hentikanKamera();
+
+
+    document
+        .getElementById(
+            "scannerSection"
+        )
+        .style.display =
+        "none";
+
+
+    document
+        .getElementById(
+            "loginSection"
+        )
+        .style.display =
+        "block";
+
+
+    document
+        .getElementById(
+            "loginInfo"
+        )
+        .style.display =
+        "none";
+
+}
+
+
+
+// ============================================================
+// MODE QR
+// ============================================================
+
+function pilihMode(
+    mode
+) {
+
+    modeSekarang =
+        mode;
+
+
+    const hadir =
+        document
+            .getElementById(
+                "btnHadir"
+            );
+
+
+    const terlambat =
+        document
+            .getElementById(
+                "btnTerlambat"
+            );
+
+
+    hadir.classList.remove(
+        "mode-selected"
+    );
+
+
+    terlambat.classList.remove(
+        "mode-selected"
+    );
+
+
+    const indikator =
+        document
+            .getElementById(
+                "modeAktif"
+            );
+
+
+    if (
+        mode ===
+        "HADIR"
+    ) {
+
+        hadir.classList.add(
+            "mode-selected"
+        );
+
+
+        indikator.innerHTML =
+            "🟢 HADIR";
+
+
+        indikator.style.background =
+            "#dcfce7";
+
+
+        indikator.style.color =
+            "#166534";
+
+
+    } else {
+
+        terlambat.classList.add(
+            "mode-selected"
+        );
+
+
+        indikator.innerHTML =
+            "🟠 TERLAMBAT";
+
+
+        indikator.style.background =
+            "#fef3c7";
+
+
+        indikator.style.color =
+            "#92400e";
+
+    }
+
+}
+
+
+
+// ============================================================
+// CAMERA
+// ============================================================
+
+async function mulaiKamera() {
+
+    const info =
+        document
+            .getElementById(
+                "cameraInfo"
+            );
+
+
+    try {
+
+        if (!qrScanner) {
+
+            qrScanner =
+                new Html5Qrcode(
+                    "reader",
+                    {
+                        formatsToSupport: [
+                            Html5QrcodeSupportedFormats
+                                .QR_CODE
+                        ]
+                    },
+                    false
+                );
+
+        }
+
+
+        info.textContent =
+            kamera === "user"
+            ?
+            "📱 Kamera Depan"
+            :
+            "📷 Kamera Belakang";
+
+
+        await qrScanner.start(
+
+            {
+                facingMode:
+                    kamera
+            },
+
+            {
+                fps:
+                    12,
+
+                qrbox:
+                    function(
+                        width,
+                        height
+                    ) {
+
+                        const size =
+                            Math.floor(
+                                Math.min(
+                                    width,
+                                    height
+                                )
+                                *
+                                0.70
+                            );
+
+
+                        return {
+
+                            width:
+                                size,
+
+                            height:
+                                size
+
+                        };
+
+                    }
+
+            },
+
+            onScanSuccess,
+
+            function() {
+
+                // Error frame scan
+                // sengaja diabaikan.
+                // Ini normal ketika QR
+                // belum ada di kamera.
+
+            }
+
+        );
+
+
+        kameraAktif =
+            true;
+
+
+    } catch (err) {
+
+        console.error(err);
+
+
+        kameraAktif =
+            false;
+
+
+        info.textContent =
+            "❌ Kamera gagal dibuka";
+
+
+        tampilHasil(
+            "error",
+            "KAMERA TIDAK TERSEDIA",
+            "Izinkan akses kamera atau gunakan input manual."
+        );
+
+    }
+
+}
+
+
+
+async function hentikanKamera() {
+
+    if (
+        !qrScanner ||
+        !kameraAktif
+    ) {
+        return;
+    }
+
+
+    try {
+
+        await qrScanner.stop();
+
+
+        kameraAktif =
+            false;
+
+
+    } catch (e) {
+
+        console.log(e);
+
+    }
+
+}
+
+
+
+async function gantiKamera() {
+
+    if (
+        sedangMengirim
+    ) {
+        return;
+    }
+
+
+    await hentikanKamera();
+
+
+    kamera =
+        kamera === "user"
+        ?
+        "environment"
+        :
+        "user";
+
+
+    await mulaiKamera();
+
+}
+
+
+
+// ============================================================
+// QR SUCCESS
+// ============================================================
+
+async function onScanSuccess(
+    decodedText
+) {
+
+    const identifier =
+        String(
+            decodedText || ""
+        )
+        .trim();
+
+
+    if (!identifier) {
+        return;
+    }
+
+
+    if (
+        sedangMengirim
+    ) {
+        return;
+    }
+
+
+    const sekarang =
+        Date.now();
+
+
+    if (
+        identifier ===
+        kodeTerakhir
+        &&
+        sekarang -
+        waktuKodeTerakhir <
+        2500
+    ) {
+
+        return;
+
+    }
+
+
+    kodeTerakhir =
+        identifier;
+
+
+    waktuKodeTerakhir =
+        sekarang;
+
+
+    sedangMengirim =
+        true;
+
+
+    tampilHasil(
+        "info",
+        "MEMPROSES...",
+        "QR terbaca. Menunggu konfirmasi database."
+    );
+
+
+    try {
+
+        const hasil =
+            await postApi({
+
+                action:
+                    "attendance",
+
+                school_id:
+                    SCHOOL_ID,
+
+                session_token:
+                    sessionToken,
+
+                identifier:
+                    identifier,
+
+                status:
+                    modeSekarang,
+
+                sumber:
+                    "QR"
+
+            });
+
+
+        if (
+            cekSessionHabis(
+                hasil
+            )
+        ) {
+            return;
+        }
+
+
+        if (hasil.ok) {
+
+            const siswa =
+                hasil.student || {};
+
+
+            const absen =
+                hasil.attendance || {};
+
+
+            if (
+                hasil.code ===
+                "SUDAH_TERCATAT"
+            ) {
+
+                beepInfo();
+
+
+                tampilHasil(
+                    "info",
+                    siswa.nama ||
+                    "SISWA",
+
+                    "SUDAH TERCATAT "
+                    +
+                    (
+                        absen.status ||
+                        ""
+                    )
+                );
+
+
+            } else {
+
+                beepSukses();
+
+
+                tampilHasil(
+                    "success",
+                    siswa.nama ||
+                    "SISWA",
+
+                    (
+                        absen.status ||
+                        modeSekarang
+                    )
+                    +
+                    " • "
+                    +
+                    (
+                        absen.jam ||
+                        ""
+                    )
+                );
+
+            }
+
+
+        } else {
+
+            beepGagal();
+
+
+            tampilHasil(
+                "error",
+                "DITOLAK",
+                hasil.message ||
+                hasil.code
+            );
+
+        }
+
+
+    } catch (err) {
+
+        console.error(err);
+
+
+        beepGagal();
+
+
+        tampilHasil(
+            "error",
+            "GAGAL TERSIMPAN",
+            "Periksa koneksi internet lalu scan ulang."
+        );
+
+
+    } finally {
+
+        setTimeout(
+            function() {
+
+                sedangMengirim =
+                    false;
+
+            },
+            350
+        );
+
+    }
+
+}
+
+
+
+// ============================================================
+// MANUAL
+// ============================================================
+
+async function catatManual() {
+
+    if (
+        sedangMengirim
+    ) {
+        return;
+    }
+
+
+    const identifier =
+        document
+            .getElementById(
+                "manualIdentifier"
+            )
+            .value
+            .trim();
+
+
+    const status =
+        document
+            .getElementById(
+                "manualStatus"
+            )
+            .value;
+
+
+    if (!identifier) {
+
+        alert(
+            "Masukkan NISN atau Student ID."
+        );
+
+        return;
+
+    }
+
+
+    sedangMengirim =
+        true;
+
+
+    tampilHasil(
+        "info",
+        "MEMPROSES...",
+        "Menyimpan status manual."
+    );
+
+
+    try {
+
+        const hasil =
+            await postApi({
+
+                action:
+                    "attendance",
+
+                school_id:
+                    SCHOOL_ID,
+
+                session_token:
+                    sessionToken,
+
+                identifier:
+                    identifier,
+
+                status:
+                    status,
+
+                sumber:
+                    "MANUAL"
+
+            });
+
+
+        if (
+            cekSessionHabis(
+                hasil
+            )
+        ) {
+            return;
+        }
+
+
+        if (hasil.ok) {
+
+            beepSukses();
+
+
+            const siswa =
+                hasil.student || {};
+
+
+            const absen =
+                hasil.attendance || {};
+
+
+            tampilHasil(
+                "success",
+                siswa.nama ||
+                "SISWA",
+
+                (
+                    absen.status ||
+                    status
+                )
+                +
+                " • "
+                +
+                (
+                    absen.jam ||
+                    ""
+                )
+            );
+
+
+            document
+                .getElementById(
+                    "manualIdentifier"
+                )
+                .value =
+                "";
+
+
+        } else {
+
+            beepGagal();
+
+
+            tampilHasil(
+                "error",
+                "DITOLAK",
+                hasil.message ||
+                hasil.code
+            );
+
+        }
+
+
+    } catch (err) {
+
+        console.error(err);
+
+
+        beepGagal();
+
+
+        tampilHasil(
+            "error",
+            "GAGAL TERSIMPAN",
+            "Periksa koneksi internet."
+        );
+
+
+    } finally {
+
+        sedangMengirim =
+            false;
+
+    }
+
+}
+
+
+
+// ============================================================
+// REKAP ALPHA
+// ============================================================
+
+async function rekapAlpha() {
+
+    if (
+        sedangMengirim
+    ) {
+        return;
+    }
+
+
+    const yakin =
+        confirm(
+
+            "YAKIN SELESAI ABSENSI PAGI?\n\n"
+            +
+            "Semua siswa aktif yang belum memiliki "
+            +
+            "status hari ini akan dicatat ALPHA."
+
+        );
+
+
+    if (!yakin) {
+        return;
+    }
+
+
+    sedangMengirim =
+        true;
+
+
+    tampilHasil(
+        "info",
+        "REKAP ALPHA...",
+        "Backend sedang memeriksa seluruh siswa."
+    );
+
+
+    try {
+
+        const hasil =
+            await postApi({
+
+                action:
+                    "rekap_alpha",
+
+                school_id:
+                    SCHOOL_ID,
+
+                session_token:
+                    sessionToken,
+
+                scope:
+                    "ALL"
+
+            });
+
+
+        if (
+            cekSessionHabis(
+                hasil
+            )
+        ) {
+            return;
+        }
+
+
+        if (hasil.ok) {
+
+            beepSukses();
+
+
+            const daftar =
+                hasil.alpha || [];
+
+
+            let namaAlpha =
+                daftar
+                    .slice(0,10)
+                    .map(
+                        (s, i) =>
+                        (i + 1)
+                        +
+                        ". "
+                        +
+                        s.nama
+                    )
+                    .join("<br>");
+
+
+            if (
+                daftar.length > 10
+            ) {
+
+                namaAlpha +=
+
+                    "<br>...dan "
+                    +
+                    (
+                        daftar.length - 10
+                    )
+                    +
+                    " siswa lainnya.";
+
+            }
+
+
+            tampilHasil(
+                "success",
+
+                "REKAP SELESAI",
+
+                "Wajib absen: "
+                +
+                hasil.total_wajib_absen
+
+                +
+                "<br>Sudah memiliki status: "
+                +
+                hasil.sudah_memiliki_status
+
+                +
+                "<br>Alpha dibuat: "
+                +
+                hasil.alpha_dibuat
+
+                +
+                (
+                    namaAlpha
+                    ?
+                    "<hr>" + namaAlpha
+                    :
+                    ""
+                )
+
+            );
+
+
+        } else {
+
+            beepGagal();
+
+
+            tampilHasil(
+                "error",
+                "REKAP GAGAL",
+                hasil.message ||
+                hasil.code
+            );
+
+        }
+
+
+    } catch (err) {
+
+        console.error(err);
+
+
+        beepGagal();
+
+
+        tampilHasil(
+            "error",
+            "REKAP GAGAL",
+            "Periksa koneksi internet."
+        );
+
+
+    } finally {
+
+        sedangMengirim =
+            false;
+
+    }
+
+}
+
+
+
+// ============================================================
+// SESSION EXPIRED
+// ============================================================
+
+function cekSessionHabis(
+    hasil
+) {
+
+    if (
+        hasil &&
+        (
+            hasil.code ===
+            "SESSION_EXPIRED"
+            ||
+            hasil.code ===
+            "SESSION_KOSONG"
+            ||
+            hasil.code ===
+            "SESSION_INVALID"
+        )
+    ) {
+
+        beepGagal();
+
+
+        alert(
+            "Sesi scanner sudah habis.\n\nSilakan login kembali."
+        );
+
+
+        sessionToken =
+            "";
+
+
+        hentikanKamera();
+
+
+        document
+            .getElementById(
+                "scannerSection"
+            )
+            .style.display =
+            "none";
+
+
+        document
+            .getElementById(
+                "loginSection"
+            )
+            .style.display =
+            "block";
+
+
+        return true;
+
+    }
+
+
+    return false;
+
+}
+
+
+
+// ============================================================
+// DISPLAY RESULT
+// ============================================================
+
+function tampilHasil(
+    jenis,
+    judul,
+    detail
+) {
+
+    const el =
+        document
+            .getElementById(
+                "hasil"
+            );
+
+
+    el.className =
+        "";
+
+
+    if (
+        jenis ===
+        "success"
+    ) {
+
+        el.classList.add(
+            "hasil-success"
+        );
+
+
+    } else if (
+        jenis ===
+        "info"
+    ) {
+
+        el.classList.add(
+            "hasil-info"
+        );
+
+
+    } else {
+
+        el.classList.add(
+            "hasil-error"
+        );
+
+    }
+
+
+    el.innerHTML =
+
+        '<div class="nama-siswa">'
+        +
+        judul
+        +
+        '</div>'
+
+        +
+
+        '<div class="status-besar">'
+        +
+        detail
+        +
+        '</div>';
+
+}
+
+</script>
+
+</body>
+
+</html>
