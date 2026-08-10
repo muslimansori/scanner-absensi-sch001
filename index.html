@@ -231,7 +231,60 @@
             color: #6b7280;
             font-weight: bold;
         }
+.queue-status {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+    margin-top: 14px;
+}
 
+.queue-pill {
+    background: #f3f4f6;
+    border-radius: 9px;
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.queue-pill strong {
+    display: block;
+    font-size: 18px;
+    color: #111827;
+    margin-bottom: 2px;
+}
+
+#scanLog {
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.log-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.log-item:last-child {
+    border-bottom: none;
+}
+
+.log-capture {
+    color: #374151;
+}
+
+.log-success {
+    color: #166534;
+}
+
+.log-info {
+    color: #92400e;
+}
+
+.log-error {
+    color: #991b1b;
+}
     </style>
 
 </head>
@@ -360,6 +413,27 @@
             </div>
 
         </div>
+        <div class="queue-pill">
+        <strong id="qSaved">0</strong>
+        Tersimpan
+    </div>
+
+    <div class="queue-pill">
+        <strong id="qInfo">0</strong>
+        Info
+    </div>
+
+    <div class="queue-pill">
+        <strong id="qFailed">0</strong>
+        Gagal
+    </div>
+
+    <div class="queue-pill">
+        <strong id="qCaptured">0</strong>
+        Terbaca
+    </div>
+
+</div>
 
 
 
@@ -401,6 +475,23 @@
         <!-- RESULT -->
 
         <div id="hasil"></div>
+
+        <div class="card">
+
+    <h3 style="margin-top:0;">
+        ⚡ Aktivitas Scan
+    </h3>
+
+    <div
+        id="scanLog"
+        data-empty="1"
+    >
+        <div class="helper">
+            Belum ada QR yang diproses.
+        </div>
+    </div>
+
+</div>
 
 
 
@@ -527,6 +618,10 @@ const SCHOOL_ID =
 // STATE
 // ============================================================
 
+// ============================================================
+// STATE V2 QUEUE
+// ============================================================
+
 let sessionToken =
     "";
 
@@ -547,20 +642,76 @@ let kameraAktif =
     false;
 
 
-let sedangMengirim =
-    false;
+let audioContext =
+    null;
 
 
-let kodeTerakhir =
-    "";
+// ============================================================
+// QUEUE CONFIG
+// ============================================================
+
+const MAX_REQUEST_AKTIF =
+    2;
 
 
-let waktuKodeTerakhir =
+const MAX_TOTAL_PENDING =
+    12;
+
+
+const COOLDOWN_QR_MS =
+    2500;
+
+
+// ============================================================
+// QUEUE STATE
+// ============================================================
+
+let antreanScan =
+    [];
+
+
+let requestAktif =
     0;
 
 
-let audioContext =
-    null;
+let kodeSedangDiproses =
+    new Set();
+
+
+let cooldownKode =
+    new Map();
+
+
+let operasiEksklusif =
+    false;
+
+
+let sessionSedangDitutup =
+    false;
+
+
+let peringatanAntreanTerakhir =
+    0;
+
+
+// ============================================================
+// STATISTIK SESI
+// ============================================================
+
+let statTertangkap =
+    0;
+
+
+let statTersimpan =
+    0;
+
+
+let statInfo =
+    0;
+
+
+let statGagal =
+    0;
 
 
 
@@ -603,6 +754,14 @@ function beepSukses() {
 
 }
 
+function beepTangkap() {
+
+    bunyi(
+        520,
+        0.04
+    );
+
+}
 
 
 function beepInfo() {
@@ -687,6 +846,584 @@ function bunyi(
             "Audio tidak tersedia.",
             e
         );
+
+    }
+
+}
+
+// ============================================================
+// RESET QUEUE
+// ============================================================
+
+function resetQueueState() {
+
+    antreanScan =
+        [];
+
+
+    requestAktif =
+        0;
+
+
+    kodeSedangDiproses
+        .clear();
+
+
+    cooldownKode
+        .clear();
+
+
+    operasiEksklusif =
+        false;
+
+
+    sessionSedangDitutup =
+        false;
+
+
+    statTertangkap =
+        0;
+
+
+    statTersimpan =
+        0;
+
+
+    statInfo =
+        0;
+
+
+    statGagal =
+        0;
+
+
+    updateQueueStatus();
+
+
+    const log =
+        document
+            .getElementById(
+                "scanLog"
+            );
+
+
+    if (log) {
+
+        log.dataset.empty =
+            "1";
+
+
+        log.innerHTML =
+            '<div class="helper">'
+            +
+            'Belum ada QR yang diproses.'
+            +
+            '</div>';
+
+    }
+
+}
+
+
+
+// ============================================================
+// UPDATE STATUS QUEUE
+// ============================================================
+
+function updateQueueStatus() {
+
+    const set =
+        function(
+            id,
+            value
+        ) {
+
+            const el =
+                document
+                    .getElementById(
+                        id
+                    );
+
+
+            if (el) {
+
+                el.textContent =
+                    value;
+
+            }
+
+        };
+
+
+    set(
+        "qWaiting",
+        antreanScan.length
+    );
+
+
+    set(
+        "qActive",
+        requestAktif
+    );
+
+
+    set(
+        "qSaved",
+        statTersimpan
+    );
+
+
+    set(
+        "qInfo",
+        statInfo
+    );
+
+
+    set(
+        "qFailed",
+        statGagal
+    );
+
+
+    set(
+        "qCaptured",
+        statTertangkap
+    );
+
+}
+
+
+
+// ============================================================
+// LOG SCANNER
+// ============================================================
+
+function tambahLog(
+    jenis,
+    judul,
+    detail
+) {
+
+    const log =
+        document
+            .getElementById(
+                "scanLog"
+            );
+
+
+    if (!log) {
+        return;
+    }
+
+
+    if (
+        log.dataset.empty ===
+        "1"
+    ) {
+
+        log.innerHTML =
+            "";
+
+
+        log.dataset.empty =
+            "0";
+
+    }
+
+
+    const item =
+        document
+            .createElement(
+                "div"
+            );
+
+
+    item.className =
+        "log-item log-" +
+        jenis;
+
+
+    const title =
+        document
+            .createElement(
+                "strong"
+            );
+
+
+    title.textContent =
+        judul;
+
+
+    const br =
+        document
+            .createElement(
+                "br"
+            );
+
+
+    const desc =
+        document
+            .createElement(
+                "span"
+            );
+
+
+    desc.textContent =
+        detail;
+
+
+    item.appendChild(
+        title
+    );
+
+
+    item.appendChild(
+        br
+    );
+
+
+    item.appendChild(
+        desc
+    );
+
+
+    log.prepend(
+        item
+    );
+
+
+    // Simpan maksimal
+    // 10 aktivitas terakhir.
+
+    while (
+        log.children.length >
+        10
+    ) {
+
+        log.removeChild(
+            log.lastChild
+        );
+
+    }
+
+}
+
+
+
+// ============================================================
+// PROSES ANTREAN
+// ============================================================
+
+function prosesAntreanScan() {
+
+    if (
+        operasiEksklusif ||
+        !sessionToken
+    ) {
+
+        return;
+
+    }
+
+
+    while (
+        requestAktif <
+        MAX_REQUEST_AKTIF
+        &&
+        antreanScan.length >
+        0
+    ) {
+
+        const task =
+            antreanScan.shift();
+
+
+        requestAktif++;
+
+
+        updateQueueStatus();
+
+
+        prosesSatuScan(
+            task
+        )
+        .finally(
+            function() {
+
+                requestAktif--;
+
+
+                kodeSedangDiproses
+                    .delete(
+                        task.identifier
+                    );
+
+
+                cooldownKode
+                    .set(
+                        task.identifier,
+                        Date.now()
+                    );
+
+
+                updateQueueStatus();
+
+
+                prosesAntreanScan();
+
+            }
+        );
+
+    }
+
+}
+
+
+
+// ============================================================
+// PROSES SATU QR KE BACKEND
+// ============================================================
+
+async function prosesSatuScan(
+    task
+) {
+
+    try {
+
+        const hasil =
+            await postApi({
+
+                action:
+                    "attendance",
+
+                school_id:
+                    SCHOOL_ID,
+
+                session_token:
+                    sessionToken,
+
+                identifier:
+                    task.identifier,
+
+                status:
+                    task.status,
+
+                sumber:
+                    "QR"
+
+            });
+
+
+        if (
+            cekSessionHabis(
+                hasil
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        const siswa =
+            hasil.student ||
+            {};
+
+
+        const absen =
+            hasil.attendance ||
+            {};
+
+
+        // ====================================================
+        // RESPONSE OK
+        // ====================================================
+
+        if (hasil.ok) {
+
+
+            // ------------------------------------------------
+            // SUDAH PERNAH TERCATAT
+            // ------------------------------------------------
+
+            if (
+                hasil.code ===
+                "SUDAH_TERCATAT"
+            ) {
+
+                statInfo++;
+
+
+                beepInfo();
+
+
+                tampilHasil(
+                    "info",
+
+                    siswa.nama ||
+                    "SISWA",
+
+                    "SUDAH TERCATAT "
+                    +
+                    (
+                        absen.status ||
+                        ""
+                    )
+                );
+
+
+                tambahLog(
+                    "info",
+
+                    "ℹ️ "
+                    +
+                    (
+                        siswa.nama ||
+                        task.identifier
+                    ),
+
+                    "Sudah tercatat "
+                    +
+                    (
+                        absen.status ||
+                        ""
+                    )
+                );
+
+
+            } else {
+
+                // ------------------------------------------------
+                // TERSIMPAN / STATUS DIPERBARUI
+                // ------------------------------------------------
+
+                statTersimpan++;
+
+
+                beepSukses();
+
+
+                tampilHasil(
+                    "success",
+
+                    siswa.nama ||
+                    "SISWA",
+
+                    (
+                        absen.status ||
+                        task.status
+                    )
+                    +
+                    " • "
+                    +
+                    (
+                        absen.jam ||
+                        ""
+                    )
+                );
+
+
+                tambahLog(
+                    "success",
+
+                    "✅ "
+                    +
+                    (
+                        siswa.nama ||
+                        task.identifier
+                    ),
+
+                    (
+                        absen.status ||
+                        task.status
+                    )
+                    +
+                    (
+                        absen.jam
+                        ?
+                        " • " +
+                        absen.jam
+                        :
+                        ""
+                    )
+                );
+
+            }
+
+
+        } else {
+
+            // ====================================================
+            // DITOLAK BACKEND
+            // ====================================================
+
+            statGagal++;
+
+
+            beepGagal();
+
+
+            tampilHasil(
+                "error",
+
+                "DITOLAK",
+
+                hasil.message ||
+                hasil.code
+            );
+
+
+            tambahLog(
+                "error",
+
+                "❌ "
+                +
+                task.identifier,
+
+                hasil.message ||
+                hasil.code ||
+                "Ditolak backend."
+            );
+
+        }
+
+
+    } catch (err) {
+
+        console.error(
+            err
+        );
+
+
+        statGagal++;
+
+
+        beepGagal();
+
+
+        tampilHasil(
+            "error",
+
+            "GAGAL TERSIMPAN",
+
+            "Periksa koneksi internet."
+        );
+
+
+        tambahLog(
+            "error",
+
+            "❌ "
+            +
+            task.identifier,
+
+            "Koneksi/backend gagal."
+        );
+
+
+    } finally {
+
+        updateQueueStatus();
 
     }
 
@@ -909,6 +1646,8 @@ async function loginScanner() {
         sessionToken =
             hasil.session_token;
 
+            resetQueueState();
+
 
         document
             .getElementById(
@@ -973,6 +1712,24 @@ async function loginScanner() {
 
 async function logoutScanner() {
 
+    if (
+    operasiEksklusif ||
+    requestAktif > 0 ||
+    antreanScan.length > 0
+) {
+
+    alert(
+
+        "Masih ada proses absensi.\n\n"
+        +
+        "Tunggu Antrean dan Proses menjadi 0 sebelum Logout."
+
+    );
+
+
+    return;
+
+}
     try {
 
         if (
@@ -1281,9 +2038,11 @@ async function hentikanKamera() {
 async function gantiKamera() {
 
     if (
-        sedangMengirim
+        operasiEksklusif
     ) {
+
         return;
+
     }
 
 
@@ -1307,8 +2066,7 @@ async function gantiKamera() {
 // ============================================================
 // QR SUCCESS
 // ============================================================
-
-async function onScanSuccess(
+function onScanSuccess(
     decodedText
 ) {
 
@@ -1325,9 +2083,13 @@ async function onScanSuccess(
 
 
     if (
-        sedangMengirim
+        !sessionToken ||
+        operasiEksklusif ||
+        sessionSedangDitutup
     ) {
+
         return;
+
     }
 
 
@@ -1335,13 +2097,15 @@ async function onScanSuccess(
         Date.now();
 
 
+    // ========================================================
+    // QR YANG SAMA SEDANG DI ANTREAN / REQUEST
+    // ========================================================
+
     if (
-        identifier ===
-        kodeTerakhir
-        &&
-        sekarang -
-        waktuKodeTerakhir <
-        2500
+        kodeSedangDiproses
+            .has(
+                identifier
+            )
     ) {
 
         return;
@@ -1349,163 +2113,140 @@ async function onScanSuccess(
     }
 
 
-    kodeTerakhir =
-        identifier;
+    // ========================================================
+    // COOLDOWN SESUDAH SELESAI
+    // ========================================================
+
+    const scanTerakhir =
+        cooldownKode.get(
+            identifier
+        ) || 0;
 
 
-    waktuKodeTerakhir =
-        sekarang;
+    if (
+        sekarang -
+        scanTerakhir <
+        COOLDOWN_QR_MS
+    ) {
+
+        return;
+
+    }
 
 
-    sedangMengirim =
-        true;
+    // ========================================================
+    // ANTREAN PENUH
+    // ========================================================
 
-
-    tampilHasil(
-        "info",
-        "MEMPROSES...",
-        "QR terbaca. Menunggu konfirmasi database."
-    );
-
-
-    try {
-
-        const hasil =
-            await postApi({
-
-                action:
-                    "attendance",
-
-                school_id:
-                    SCHOOL_ID,
-
-                session_token:
-                    sessionToken,
-
-                identifier:
-                    identifier,
-
-                status:
-                    modeSekarang,
-
-                sumber:
-                    "QR"
-
-            });
-
+    if (
+        (
+            requestAktif +
+            antreanScan.length
+        )
+        >=
+        MAX_TOTAL_PENDING
+    ) {
 
         if (
-            cekSessionHabis(
-                hasil
-            )
+            sekarang -
+            peringatanAntreanTerakhir
+            >
+            1500
         ) {
-            return;
-        }
 
+            peringatanAntreanTerakhir =
+                sekarang;
 
-        if (hasil.ok) {
-
-            const siswa =
-                hasil.student || {};
-
-
-            const absen =
-                hasil.attendance || {};
-
-
-            if (
-                hasil.code ===
-                "SUDAH_TERCATAT"
-            ) {
-
-                beepInfo();
-
-
-                tampilHasil(
-                    "info",
-                    siswa.nama ||
-                    "SISWA",
-
-                    "SUDAH TERCATAT "
-                    +
-                    (
-                        absen.status ||
-                        ""
-                    )
-                );
-
-
-            } else {
-
-                beepSukses();
-
-
-                tampilHasil(
-                    "success",
-                    siswa.nama ||
-                    "SISWA",
-
-                    (
-                        absen.status ||
-                        modeSekarang
-                    )
-                    +
-                    " • "
-                    +
-                    (
-                        absen.jam ||
-                        ""
-                    )
-                );
-
-            }
-
-
-        } else {
 
             beepGagal();
 
 
             tampilHasil(
                 "error",
-                "DITOLAK",
-                hasil.message ||
-                hasil.code
+
+                "ANTREAN PENUH",
+
+                "Tahan sebentar sampai proses berkurang."
             );
 
         }
 
 
-    } catch (err) {
-
-        console.error(err);
-
-
-        beepGagal();
-
-
-        tampilHasil(
-            "error",
-            "GAGAL TERSIMPAN",
-            "Periksa koneksi internet lalu scan ulang."
-        );
-
-
-    } finally {
-
-        setTimeout(
-            function() {
-
-                sedangMengirim =
-                    false;
-
-            },
-            350
-        );
+        return;
 
     }
 
+
+    // ========================================================
+    // CAPTURE STATUS SAAT QR DIBACA
+    //
+    // Jadi kalau petugas ganti mode sesudah ini,
+    // task yang sudah masuk antrean tidak berubah.
+    // ========================================================
+
+    const task = {
+
+        identifier:
+            identifier,
+
+        status:
+            modeSekarang,
+
+        captured_at:
+            sekarang
+
+    };
+
+
+    kodeSedangDiproses
+        .add(
+            identifier
+        );
+
+
+    cooldownKode
+        .set(
+            identifier,
+            sekarang
+        );
+
+
+    antreanScan.push(
+        task
+    );
+
+
+    statTertangkap++;
+
+
+    // Bunyi cepat:
+    // hanya berarti QR berhasil terbaca.
+
+    beepTangkap();
+
+
+    tambahLog(
+        "capture",
+
+        "📥 "
+        +
+        identifier,
+
+        task.status +
+        " • masuk antrean"
+    );
+
+
+    updateQueueStatus();
+
+
+    // Kamera TIDAK dihentikan.
+    // Langsung bisa membaca QR berikutnya.
+
+    prosesAntreanScan();
+
 }
+
 
 
 
@@ -1516,9 +2257,25 @@ async function onScanSuccess(
 async function catatManual() {
 
     if (
-        sedangMengirim
+        operasiEksklusif
     ) {
         return;
+    }
+
+
+    if (
+        requestAktif > 0 ||
+        antreanScan.length > 0
+    ) {
+
+        alert(
+            "Masih ada antrean QR yang diproses.\n\n"
+            +
+            "Tunggu sampai Antrean dan Proses menjadi 0."
+        );
+
+        return;
+
     }
 
 
@@ -1550,7 +2307,7 @@ async function catatManual() {
     }
 
 
-    sedangMengirim =
+    operasiEksklusif =
         true;
 
 
@@ -1592,7 +2349,9 @@ async function catatManual() {
                 hasil
             )
         ) {
+
             return;
+
         }
 
 
@@ -1602,15 +2361,18 @@ async function catatManual() {
 
 
             const siswa =
-                hasil.student || {};
+                hasil.student ||
+                {};
 
 
             const absen =
-                hasil.attendance || {};
+                hasil.attendance ||
+                {};
 
 
             tampilHasil(
                 "success",
+
                 siswa.nama ||
                 "SISWA",
 
@@ -1624,6 +2386,25 @@ async function catatManual() {
                 (
                     absen.jam ||
                     ""
+                )
+            );
+
+
+            tambahLog(
+                "success",
+
+                "✍️ "
+                +
+                (
+                    siswa.nama ||
+                    identifier
+                ),
+
+                "MANUAL • "
+                +
+                (
+                    absen.status ||
+                    status
                 )
             );
 
@@ -1653,7 +2434,9 @@ async function catatManual() {
 
     } catch (err) {
 
-        console.error(err);
+        console.error(
+            err
+        );
 
 
         beepGagal();
@@ -1668,7 +2451,7 @@ async function catatManual() {
 
     } finally {
 
-        sedangMengirim =
+        operasiEksklusif =
             false;
 
     }
@@ -1683,14 +2466,48 @@ async function catatManual() {
 
 async function rekapAlpha() {
 
+
     if (
-        sedangMengirim
-    ) {
-        return;
-    }
+    operasiEksklusif
+) {
+    return;
+}
 
 
+if (
+    requestAktif > 0 ||
+    antreanScan.length > 0
+) {
+
+    alert(
+
+        "BELUM BISA REKAP ALPHA.\n\n"
+        +
+        "Masih ada QR yang belum selesai diproses.\n\n"
+        +
+        "Antrean: "
+        +
+        antreanScan.length
+        +
+        "\n"
+        +
+        "Proses: "
+        +
+        requestAktif
+        +
+        "\n\n"
+        +
+        "Tunggu sampai keduanya 0."
+
+    );
+
+
+    return;
+
+}
     const yakin =
+
+    
         confirm(
 
             "YAKIN SELESAI ABSENSI PAGI?\n\n"
@@ -1707,8 +2524,8 @@ async function rekapAlpha() {
     }
 
 
-    sedangMengirim =
-        true;
+    operasiEksklusif =
+    false;
 
 
     tampilHasil(
@@ -1850,8 +2667,8 @@ async function rekapAlpha() {
 
     } finally {
 
-        sedangMengirim =
-            false;
+        operasiEksklusif =
+    false;
 
     }
 
@@ -1867,7 +2684,7 @@ function cekSessionHabis(
     hasil
 ) {
 
-    if (
+    const expired =
         hasil &&
         (
             hasil.code ===
@@ -1878,46 +2695,80 @@ function cekSessionHabis(
             ||
             hasil.code ===
             "SESSION_INVALID"
-        )
-    ) {
-
-        beepGagal();
-
-
-        alert(
-            "Sesi scanner sudah habis.\n\nSilakan login kembali."
         );
 
 
-        sessionToken =
-            "";
+    if (!expired) {
+
+        return false;
+
+    }
 
 
-        hentikanKamera();
+    // Bisa ada 2 request paralel
+    // yang sama-sama mendapat SESSION_EXPIRED.
+    // Popup cukup sekali.
 
-
-        document
-            .getElementById(
-                "scannerSection"
-            )
-            .style.display =
-            "none";
-
-
-        document
-            .getElementById(
-                "loginSection"
-            )
-            .style.display =
-            "block";
-
+    if (
+        sessionSedangDitutup
+    ) {
 
         return true;
 
     }
 
 
-    return false;
+    sessionSedangDitutup =
+        true;
+
+
+    sessionToken =
+        "";
+
+
+    antreanScan =
+        [];
+
+
+    kodeSedangDiproses
+        .clear();
+
+
+    updateQueueStatus();
+
+
+    beepGagal();
+
+
+    alert(
+
+        "Sesi scanner sudah habis.\n\n"
+        +
+        "Silakan login kembali."
+
+    );
+
+
+    hentikanKamera();
+
+
+    document
+        .getElementById(
+            "scannerSection"
+        )
+        .style.display =
+        "none";
+
+
+    document
+        .getElementById(
+            "loginSection"
+        )
+        .style.display =
+        "block";
+
+
+    return true;
 
 }
 
