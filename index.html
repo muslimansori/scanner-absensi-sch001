@@ -714,6 +714,23 @@ let statGagal =
     0;
 
 
+// ============================================================
+// TAMPILAN AWAL
+// ============================================================
+
+function tampilkanLoginAwal() {
+
+    document
+        .getElementById("loginSection")
+        .style.display = "block";
+
+
+    document
+        .getElementById("scannerSection")
+        .style.display = "none";
+
+}
+
 
 // ============================================================
 // AUDIO
@@ -2841,6 +2858,8 @@ function tampilHasil(
         '</div>';
 
 }
+
+tampilkanLoginAwal();
 
 </script>
 
