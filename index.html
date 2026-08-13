@@ -1467,21 +1467,88 @@ async function prosesSatuScan(
 
 async function postApi(data) {
 
-    const mulaiBrowser =
+    const mulaiKeseluruhan =
         performance.now();
+
 
     const action =
         String(
             data?.action || ""
         ).trim();
 
-    // Logout jangan di-retry.
-    // Kalau request logout pertama sebenarnya sudah sampai backend,
-    // retry kedua justru akan menemukan session sudah mati.
-    const maxAttempts =
-        action === "logout_scanner"
-        ? 1
-        : 2;
+
+    // ========================================================
+    // POLICY PER ACTION
+    // ========================================================
+
+    let timeoutMs =
+        35000;
+
+    let maxAttempts =
+        2;
+
+
+    // Login diberi napas lebih panjang.
+    if (
+        action ===
+        "login_scanner"
+    ) {
+
+        timeoutMs =
+            45000;
+
+        maxAttempts =
+            2;
+
+    }
+
+
+    // Logout jangan retry.
+    if (
+        action ===
+        "logout_scanner"
+    ) {
+
+        timeoutMs =
+            20000;
+
+        maxAttempts =
+            1;
+
+    }
+
+
+    // Rekap Alpha memang pekerjaan lebih berat.
+    if (
+        action ===
+        "rekap_alpha"
+    ) {
+
+        timeoutMs =
+            60000;
+
+        maxAttempts =
+            1;
+
+    }
+
+
+    // Foto/download nanti bisa lebih berat.
+    if (
+        action ===
+        "student_photo_preview" ||
+        action ===
+        "student_photo_download"
+    ) {
+
+        timeoutMs =
+            60000;
+
+        maxAttempts =
+            2;
+
+    }
+
 
     let errorTerakhir =
         null;
@@ -1492,6 +1559,11 @@ async function postApi(data) {
         attempt <= maxAttempts;
         attempt++
     ) {
+
+        // Timer KHUSUS attempt ini.
+        const mulaiAttempt =
+            performance.now();
+
 
         const form =
             new URLSearchParams();
@@ -1517,12 +1589,11 @@ async function postApi(data) {
             );
 
 
-        // URL dibuat unik setiap request.
-        // Tidak mengubah endpoint /exec.
         const separator =
             API_URL.includes("?")
             ? "&"
             : "?";
+
 
         const requestUrl =
             API_URL +
@@ -1536,12 +1607,15 @@ async function postApi(data) {
         const controller =
             new AbortController();
 
+
         const timeoutId =
             setTimeout(
                 () => {
+
                     controller.abort();
+
                 },
-                20000
+                timeoutMs
             );
 
 
@@ -1551,6 +1625,7 @@ async function postApi(data) {
                 await fetch(
                     requestUrl,
                     {
+
                         method:
                             "POST",
 
@@ -1565,6 +1640,7 @@ async function postApi(data) {
 
                         signal:
                             controller.signal
+
                     }
                 );
 
@@ -1578,11 +1654,8 @@ async function postApi(data) {
                 await response.text();
 
 
-            // ==================================================
-            // RESPONSE HARUS JSON
-            // ==================================================
-
             let hasil;
+
 
             try {
 
@@ -1591,11 +1664,13 @@ async function postApi(data) {
                         text
                     );
 
+
             } catch (parseError) {
 
                 console.warn(
                     "POST non-JSON",
                     {
+
                         action:
                             action,
 
@@ -1616,6 +1691,7 @@ async function postApi(data) {
                                 0,
                                 120
                             )
+
                     }
                 );
 
@@ -1628,17 +1704,28 @@ async function postApi(data) {
 
 
             // ==================================================
-            // SUKSES MENDAPAT JSON
+            // RESPONSE JSON BERHASIL
             // ==================================================
 
-            const selesaiBrowser =
+            const selesaiAttempt =
                 performance.now();
+
+
+            const selesaiKeseluruhan =
+                performance.now();
+
+
+            hasil.attempt_ms =
+                Math.round(
+                    selesaiAttempt -
+                    mulaiAttempt
+                );
 
 
             hasil.total_ms =
                 Math.round(
-                    selesaiBrowser -
-                    mulaiBrowser
+                    selesaiKeseluruhan -
+                    mulaiKeseluruhan
                 );
 
 
@@ -1650,26 +1737,38 @@ async function postApi(data) {
                 "===== PERFORMANCE ====="
             );
 
+
             console.log(
                 "Action:",
                 action
             );
+
 
             console.log(
                 "Attempt:",
                 attempt
             );
 
+
             console.log(
                 "HTTP:",
                 response.status
             );
 
+
             console.log(
-                "Total browser:",
+                "Attempt time:",
+                hasil.attempt_ms,
+                "ms"
+            );
+
+
+            console.log(
+                "Total termasuk retry:",
                 hasil.total_ms,
                 "ms"
             );
+
 
             console.log(
                 "Server:",
@@ -1684,8 +1783,8 @@ async function postApi(data) {
             ) {
 
                 console.log(
-                    "Network/redirect kira-kira:",
-                    hasil.total_ms -
+                    "Transport attempt kira-kira:",
+                    hasil.attempt_ms -
                     hasil.server_ms,
                     "ms"
                 );
@@ -1701,6 +1800,17 @@ async function postApi(data) {
             clearTimeout(
                 timeoutId
             );
+
+
+            const selesaiAttempt =
+                performance.now();
+
+
+            const attemptMs =
+                Math.round(
+                    selesaiAttempt -
+                    mulaiAttempt
+                );
 
 
             errorTerakhir =
@@ -1722,6 +1832,7 @@ async function postApi(data) {
             console.warn(
                 "POST gagal",
                 {
+
                     action:
                         action,
 
@@ -1731,21 +1842,26 @@ async function postApi(data) {
                     max_attempts:
                         maxAttempts,
 
+                    attempt_ms:
+                        attemptMs,
+
+                    timeout_ms:
+                        timeoutMs,
+
                     error:
                         jenisError
+
                 }
             );
 
 
-            // Kalau masih punya kesempatan,
-            // tunggu sebentar lalu ulang otomatis.
             if (
                 attempt <
                 maxAttempts
             ) {
 
                 console.warn(
-                    "Retry otomatis dalam 700 ms..."
+                    "Retry otomatis dalam 1000 ms..."
                 );
 
 
@@ -1753,7 +1869,7 @@ async function postApi(data) {
                     resolve =>
                         setTimeout(
                             resolve,
-                            700
+                            1000
                         )
                 );
 
@@ -1774,10 +1890,11 @@ async function postApi(data) {
 
 
     throw new Error(
-        "Backend tidak mengembalikan JSON setelah retry."
+        "Backend tidak dapat dihubungi setelah retry."
     );
 
 }
+
 
 
 // ============================================================
