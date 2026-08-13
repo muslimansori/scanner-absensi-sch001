@@ -1470,107 +1470,314 @@ async function postApi(data) {
     const mulaiBrowser =
         performance.now();
 
+    const action =
+        String(
+            data?.action || ""
+        ).trim();
 
-    const form =
-        new URLSearchParams();
+    // Logout jangan di-retry.
+    // Kalau request logout pertama sebenarnya sudah sampai backend,
+    // retry kedua justru akan menemukan session sudah mati.
+    const maxAttempts =
+        action === "logout_scanner"
+        ? 1
+        : 2;
+
+    let errorTerakhir =
+        null;
 
 
-    Object.keys(data)
-        .forEach(
-            key => {
+    for (
+        let attempt = 1;
+        attempt <= maxAttempts;
+        attempt++
+    ) {
 
-                if (
-                    data[key] !== undefined &&
-                    data[key] !== null
-                ) {
+        const form =
+            new URLSearchParams();
 
-                    form.append(
-                        key,
-                        data[key]
-                    );
+
+        Object.keys(data)
+            .forEach(
+                key => {
+
+                    if (
+                        data[key] !== undefined &&
+                        data[key] !== null
+                    ) {
+
+                        form.append(
+                            key,
+                            data[key]
+                        );
+
+                    }
 
                 }
-
-            }
-        );
-
-
-    const response =
-        await fetch(
-            API_URL,
-            {
-
-                method:
-                    "POST",
-
-                body:
-                    form,
-
-                redirect:
-                    "follow"
-
-            }
-        );
-
-
-    const text =
-        await response.text();
-
-
-    const selesaiBrowser =
-        performance.now();
-
-
-    try {
-
-        const hasil =
-            JSON.parse(text);
-
-
-        hasil.total_ms =
-            Math.round(
-                selesaiBrowser -
-                mulaiBrowser
             );
 
 
-        console.log(
-            "===== PERFORMANCE ====="
-        );
+        // URL dibuat unik setiap request.
+        // Tidak mengubah endpoint /exec.
+        const separator =
+            API_URL.includes("?")
+            ? "&"
+            : "?";
 
-        console.log(
-            "Total browser:",
-            hasil.total_ms,
-            "ms"
-        );
-
-        console.log(
-            "Server:",
-            hasil.server_ms,
-            "ms"
-        );
-
-        console.log(
-            "Network/redirect kira-kira:",
-            hasil.total_ms -
-            hasil.server_ms,
-            "ms"
-        );
+        const requestUrl =
+            API_URL +
+            separator +
+            "_ts=" +
+            Date.now() +
+            "&_attempt=" +
+            attempt;
 
 
-        return hasil;
+        const controller =
+            new AbortController();
+
+        const timeoutId =
+            setTimeout(
+                () => {
+                    controller.abort();
+                },
+                20000
+            );
 
 
-    } catch (e) {
+        try {
 
-        throw new Error(
-            "Backend tidak mengembalikan JSON."
-        );
+            const response =
+                await fetch(
+                    requestUrl,
+                    {
+                        method:
+                            "POST",
+
+                        body:
+                            form,
+
+                        redirect:
+                            "follow",
+
+                        cache:
+                            "no-store",
+
+                        signal:
+                            controller.signal
+                    }
+                );
+
+
+            clearTimeout(
+                timeoutId
+            );
+
+
+            const text =
+                await response.text();
+
+
+            // ==================================================
+            // RESPONSE HARUS JSON
+            // ==================================================
+
+            let hasil;
+
+            try {
+
+                hasil =
+                    JSON.parse(
+                        text
+                    );
+
+            } catch (parseError) {
+
+                console.warn(
+                    "POST non-JSON",
+                    {
+                        action:
+                            action,
+
+                        attempt:
+                            attempt,
+
+                        http_status:
+                            response.status,
+
+                        final_url:
+                            response.url,
+
+                        response_length:
+                            text.length,
+
+                        response_awal:
+                            text.substring(
+                                0,
+                                120
+                            )
+                    }
+                );
+
+
+                throw new Error(
+                    "RESPONSE_NON_JSON"
+                );
+
+            }
+
+
+            // ==================================================
+            // SUKSES MENDAPAT JSON
+            // ==================================================
+
+            const selesaiBrowser =
+                performance.now();
+
+
+            hasil.total_ms =
+                Math.round(
+                    selesaiBrowser -
+                    mulaiBrowser
+                );
+
+
+            hasil.transport_attempt =
+                attempt;
+
+
+            console.log(
+                "===== PERFORMANCE ====="
+            );
+
+            console.log(
+                "Action:",
+                action
+            );
+
+            console.log(
+                "Attempt:",
+                attempt
+            );
+
+            console.log(
+                "HTTP:",
+                response.status
+            );
+
+            console.log(
+                "Total browser:",
+                hasil.total_ms,
+                "ms"
+            );
+
+            console.log(
+                "Server:",
+                hasil.server_ms ?? "-",
+                "ms"
+            );
+
+
+            if (
+                typeof hasil.server_ms ===
+                "number"
+            ) {
+
+                console.log(
+                    "Network/redirect kira-kira:",
+                    hasil.total_ms -
+                    hasil.server_ms,
+                    "ms"
+                );
+
+            }
+
+
+            return hasil;
+
+
+        } catch (err) {
+
+            clearTimeout(
+                timeoutId
+            );
+
+
+            errorTerakhir =
+                err;
+
+
+            const jenisError =
+                err?.name ===
+                "AbortError"
+                ?
+                "TIMEOUT"
+                :
+                (
+                    err?.message ||
+                    "TRANSPORT_ERROR"
+                );
+
+
+            console.warn(
+                "POST gagal",
+                {
+                    action:
+                        action,
+
+                    attempt:
+                        attempt,
+
+                    max_attempts:
+                        maxAttempts,
+
+                    error:
+                        jenisError
+                }
+            );
+
+
+            // Kalau masih punya kesempatan,
+            // tunggu sebentar lalu ulang otomatis.
+            if (
+                attempt <
+                maxAttempts
+            ) {
+
+                console.warn(
+                    "Retry otomatis dalam 700 ms..."
+                );
+
+
+                await new Promise(
+                    resolve =>
+                        setTimeout(
+                            resolve,
+                            700
+                        )
+                );
+
+
+                continue;
+
+            }
+
+        }
 
     }
 
-}
 
+    console.error(
+        "POST gagal setelah seluruh percobaan.",
+        errorTerakhir
+    );
+
+
+    throw new Error(
+        "Backend tidak mengembalikan JSON setelah retry."
+    );
+
+}
 
 
 // ============================================================
