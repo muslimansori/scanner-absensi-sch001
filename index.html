@@ -167,6 +167,36 @@
             margin-bottom: 10px;
         }
 
+        .connection-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    padding: 10px 14px;
+    margin-bottom: 16px;
+
+    border-radius: 12px;
+
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.connection-online {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.connection-checking {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.connection-offline {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
         #hasil {
             display: none;
             padding: 16px;
@@ -372,6 +402,13 @@
             </button>
 
         </div>
+
+        <div
+    id="connectionStatus"
+    class="connection-status connection-online"
+>
+    🟢 Backend siap
+</div>
 
 
 
@@ -717,6 +754,8 @@ let recoveryPromise =
 let peringatanKoneksiTerakhir =
     0;
 
+let lastBackendSuccessAt =
+    0;
 
 let peringatanAntreanTerakhir =
     0;
@@ -1477,6 +1516,90 @@ async function prosesSatuScan(
 }
 
 // ============================================================
+// DISPLAY STATUS KONEKSI
+// ============================================================
+
+function tampilStatusKoneksi(
+    status,
+    pesan
+) {
+
+    const el =
+        document.getElementById(
+            "connectionStatus"
+        );
+
+
+    if (!el) {
+        return;
+    }
+
+
+    el.className =
+        "connection-status";
+
+
+    if (
+        status ===
+        "online"
+    ) {
+
+        el.classList.add(
+            "connection-online"
+        );
+
+        el.textContent =
+            "🟢 " + pesan;
+
+
+    } else if (
+        status ===
+        "checking"
+    ) {
+
+        el.classList.add(
+            "connection-checking"
+        );
+
+        el.textContent =
+            "🟡 " + pesan;
+
+
+    } else {
+
+        el.classList.add(
+            "connection-offline"
+        );
+
+        el.textContent =
+            "🔴 " + pesan;
+
+    }
+
+}
+
+// ============================================================
+// BACKEND BERHASIL DIHUBUNGI
+// ============================================================
+
+function tandaiBackendBerhasil() {
+
+    backendReady =
+        true;
+
+
+    lastBackendSuccessAt =
+        Date.now();
+
+
+    tampilStatusKoneksi(
+        "online",
+        "Backend siap"
+    );
+
+}
+
+// ============================================================
 // BACKEND HEALTH CHECK
 // ============================================================
 
@@ -1581,12 +1704,20 @@ async function pulihkanBackend() {
         backendReady =
             false;
 
+
+        tampilStatusKoneksi(
+            "offline",
+            "Internet terputus"
+        );
+
+
         return false;
 
     }
 
 
-    // Hindari beberapa recovery berjalan bersamaan.
+    // Kalau recovery sedang berjalan,
+    // jangan membuat recovery kedua.
     if (recoveryPromise) {
 
         return recoveryPromise;
@@ -1594,11 +1725,21 @@ async function pulihkanBackend() {
     }
 
 
+    const recoveryDimulaiAt =
+        Date.now();
+
+
     recoveryPromise =
         (async function() {
 
             backendReady =
                 false;
+
+
+            tampilStatusKoneksi(
+                "checking",
+                "Memeriksa backend..."
+            );
 
 
             for (
@@ -1619,8 +1760,7 @@ async function pulihkanBackend() {
 
                 if (sehat) {
 
-                    backendReady =
-                        true;
+                    tandaiBackendBerhasil();
 
 
                     console.log(
@@ -1628,33 +1768,39 @@ async function pulihkanBackend() {
                     );
 
 
-                    if (sessionToken) {
+                    return true;
 
-                        tampilHasil(
-                            "info",
-                            "KONEKSI PULIH",
-                            "Backend siap. Silakan scan ulang QR yang gagal."
-                        );
-
-                    } else {
-
-                        const info =
-                            document.getElementById(
-                                "loginInfo"
-                            );
+                }
 
 
-                        if (info) {
+                // ====================================================
+                // ANTI RACE CONDITION
+                //
+                // Bisa saja health check lambat/gagal,
+                // tetapi request POST lain sudah sukses
+                // setelah recovery ini dimulai.
+                //
+                // Kalau begitu backend sebenarnya hidup.
+                // ====================================================
 
-                            info.style.display =
-                                "block";
+                if (
+                    lastBackendSuccessAt >
+                    recoveryDimulaiAt
+                ) {
 
-                            info.textContent =
-                                "✅ Backend siap. Silakan login.";
+                    backendReady =
+                        true;
 
-                        }
 
-                    }
+                    tampilStatusKoneksi(
+                        "online",
+                        "Backend siap"
+                    );
+
+
+                    console.log(
+                        "✅ Recovery dibatalkan karena request lain sudah sukses."
+                    );
 
 
                     return true;
@@ -1679,8 +1825,39 @@ async function pulihkanBackend() {
             }
 
 
+            // Periksa SEKALI LAGI sebelum
+            // menyatakan backend tidak siap.
+            //
+            // Ini penting jika request lain sukses
+            // persis ketika health check terakhir berjalan.
+            if (
+                lastBackendSuccessAt >
+                recoveryDimulaiAt
+            ) {
+
+                backendReady =
+                    true;
+
+
+                tampilStatusKoneksi(
+                    "online",
+                    "Backend siap"
+                );
+
+
+                return true;
+
+            }
+
+
             backendReady =
                 false;
+
+
+            tampilStatusKoneksi(
+                "offline",
+                "Backend belum terjangkau"
+            );
 
 
             console.warn(
@@ -1718,24 +1895,34 @@ function tandaiBackendBermasalah() {
         false;
 
 
-    if (sessionToken) {
+    if (!navigator.onLine) {
 
-        tampilHasil(
-            "error",
-            "KONEKSI TERGANGGU",
-            "Tunggu koneksi pulih. Jangan scan dulu."
+        tampilStatusKoneksi(
+            "offline",
+            "Internet terputus"
         );
+
+
+        return;
 
     }
 
 
-    if (navigator.onLine) {
+    tampilStatusKoneksi(
+        "checking",
+        "Koneksi terganggu • memeriksa..."
+    );
+
+
+    if (!recoveryPromise) {
 
         setTimeout(
             () => {
+
                 pulihkanBackend();
+
             },
-            1000
+            700
         );
 
     }
@@ -1760,15 +1947,10 @@ window.addEventListener(
         );
 
 
-        if (sessionToken) {
-
-            tampilHasil(
-                "error",
-                "OFFLINE",
-                "Internet terputus. QR belum boleh dikirim."
-            );
-
-        }
+        tampilStatusKoneksi(
+            "offline",
+            "Internet terputus"
+        );
 
     }
 );
@@ -1787,15 +1969,10 @@ window.addEventListener(
         );
 
 
-        if (sessionToken) {
-
-            tampilHasil(
-                "info",
-                "MEMULIHKAN KONEKSI",
-                "Menunggu backend siap..."
-            );
-
-        }
+        tampilStatusKoneksi(
+            "checking",
+            "Internet kembali • memeriksa backend..."
+        );
 
 
         pulihkanBackend();
@@ -2135,11 +2312,10 @@ async function postApi(data) {
 
             }
 
-            backendReady =
-    true;
+            tandaiBackendBerhasil();
 
 
-            return hasil;
+return hasil;
 
 
         } catch (err) {
@@ -2872,11 +3048,21 @@ if (
         beepGagal();
 
 
-        tampilHasil(
-            "error",
-            "KONEKSI BELUM SIAP",
-            "QR belum dikirim. Tunggu sampai koneksi pulih."
-        );
+        if (!navigator.onLine) {
+
+    tampilStatusKoneksi(
+        "offline",
+        "Internet terputus • QR belum dikirim"
+    );
+
+} else {
+
+    tampilStatusKoneksi(
+        "checking",
+        "Backend belum siap • tunggu sebentar"
+    );
+
+}
 
     }
 
