@@ -993,6 +993,8 @@ function resetQueueState() {
 
     if (log) {
 
+    
+
         log.dataset.empty =
             "1";
 
@@ -1003,6 +1005,44 @@ function resetQueueState() {
             'Belum ada QR yang diproses.'
             +
             '</div>';
+
+    }
+
+        // ========================================================
+    // BERSIHKAN HASIL SESI SEBELUMNYA
+    // ========================================================
+
+    const hasilEl =
+        document.getElementById(
+            "hasil"
+        );
+
+
+    if (hasilEl) {
+
+        hasilEl.className =
+            "";
+
+        hasilEl.innerHTML =
+            "";
+
+    }
+
+
+    // ========================================================
+    // BERSIHKAN INPUT MANUAL
+    // ========================================================
+
+    const manualIdentifier =
+        document.getElementById(
+            "manualIdentifier"
+        );
+
+
+    if (manualIdentifier) {
+
+        manualIdentifier.value =
+            "";
 
     }
 
