@@ -1983,6 +1983,50 @@ window.addEventListener(
 
 
 // ============================================================
+// TRANSACTION REQUEST ID V1
+// ============================================================
+
+function buatRequestIdAttendance() {
+
+    let unik = "";
+
+    if (
+        window.crypto &&
+        typeof window.crypto.randomUUID ===
+        "function"
+    ) {
+
+        unik =
+            window.crypto.randomUUID();
+
+    } else {
+
+        unik =
+            Date.now().toString(36)
+            +
+            "-"
+            +
+            Math.random()
+                .toString(36)
+                .slice(2, 14);
+
+    }
+
+
+    return (
+        "ATTREQ-"
+        +
+        SCHOOL_ID
+        +
+        "-"
+        +
+        unik
+    );
+
+}
+
+
+// ============================================================
 // API
 // ============================================================
 
@@ -1992,10 +2036,35 @@ async function postApi(data) {
         performance.now();
 
 
+    // Salin payload agar satu transaksi memiliki payload stabil
+    // selama seluruh retry di postApi().
+    const payloadKirim = {
+        ...(data || {})
+    };
+
+
     const action =
         String(
-            data?.action || ""
-        ).trim();
+            payloadKirim.action || ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    // ========================================================
+    // TRANSACTION ACK V1
+    // request_id dibuat SEKALI sebelum loop retry.
+    // ========================================================
+
+    if (
+        action === "attendance" &&
+        !payloadKirim.request_id
+    ) {
+
+        payloadKirim.request_id =
+            buatRequestIdAttendance();
+
+    }
 
 
     // ========================================================
@@ -2090,18 +2159,18 @@ async function postApi(data) {
             new URLSearchParams();
 
 
-        Object.keys(data)
+        Object.keys(payloadKirim)
             .forEach(
                 key => {
 
                     if (
-                        data[key] !== undefined &&
-                        data[key] !== null
+                        payloadKirim[key] !== undefined &&
+                        payloadKirim[key] !== null
                     ) {
 
                         form.append(
                             key,
-                            data[key]
+                            payloadKirim[key]
                         );
 
                     }
@@ -2263,6 +2332,28 @@ async function postApi(data) {
                 "Action:",
                 action
             );
+
+
+            if (
+                action === "attendance"
+            ) {
+
+                console.log(
+                    "Request ID:",
+                    payloadKirim.request_id
+                );
+
+                console.log(
+                    "ACK replayed:",
+                    hasil?.ack?.replayed === true
+                );
+
+                console.log(
+                    "ACK source:",
+                    hasil?.ack?.source || "-"
+                );
+
+            }
 
 
             console.log(
@@ -3429,9 +3520,12 @@ async function catatManual() {
 
         tampilHasil(
             "error",
-            "GAGAL TERSIMPAN",
-            "Periksa koneksi internet."
+            "BELUM TERKONFIRMASI",
+            "Respons backend tidak diterima. Jangan input ulang dulu sampai koneksi pulih."
         );
+
+
+        tandaiBackendBermasalah();
 
 
     } finally {
