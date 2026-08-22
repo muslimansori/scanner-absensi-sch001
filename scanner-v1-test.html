@@ -1,0 +1,3725 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>GoSchool Scanner Absensi</title>
+
+    <script
+        src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js">
+    </script>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #eef2f5;
+            font-family: Arial, sans-serif;
+            color: #1f2937;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow:
+                0 5px 18px
+                rgba(0,0,0,0.08);
+        }
+
+        .header {
+            background: #1a73e8;
+            color: white;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 16px;
+        }
+
+        .header h2 {
+            margin: 0 0 5px 0;
+        }
+
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #ccd1d8;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 13px;
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-logout {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            margin-top: 14px;
+        }
+
+        .mode-title {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        #modeAktif {
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            text-align: center;
+            font-size: 19px;
+            font-weight: bold;
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn-hadir {
+            background: #16a34a;
+            color: white;
+        }
+
+        .btn-terlambat {
+            background: #f59e0b;
+            color: #111827;
+        }
+
+        .mode-selected {
+            outline: 4px solid #111827;
+        }
+
+        #reader {
+            width: 100%;
+            overflow: hidden;
+            border-radius: 14px;
+            background: #111827;
+        }
+
+        #cameraInfo {
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .connection-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    padding: 10px 14px;
+    margin-bottom: 16px;
+
+    border-radius: 12px;
+
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.connection-online {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.connection-checking {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.connection-offline {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+        #hasil {
+            display: none;
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 15px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .hasil-success {
+            display: block !important;
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .hasil-info {
+            display: block !important;
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .hasil-error {
+            display: block !important;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .nama-siswa {
+            font-size: 21px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .status-besar {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 6px;
+        }
+
+        .manual-title {
+            margin-top: 0;
+        }
+
+        .helper {
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        .separator {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 18px 0;
+        }
+
+        #scannerSection {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            color: #6b7280;
+            font-weight: bold;
+        }
+.queue-status {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+    margin-top: 14px;
+}
+
+.queue-pill {
+    background: #f3f4f6;
+    border-radius: 9px;
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.queue-pill strong {
+    display: block;
+    font-size: 18px;
+    color: #111827;
+    margin-bottom: 2px;
+}
+
+#scanLog {
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.log-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.log-item:last-child {
+    border-bottom: none;
+}
+
+.log-capture {
+    color: #374151;
+}
+
+.log-success {
+    color: #166534;
+}
+
+.log-info {
+    color: #92400e;
+}
+
+.log-error {
+    color: #991b1b;
+}
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+
+    <!-- ===================================================== -->
+    <!-- LOGIN -->
+    <!-- ===================================================== -->
+
+    <section id="loginSection">
+
+        <div class="header">
+
+            <h2>📷 Scanner Absensi</h2>
+
+            <p>
+                GoSchool • Scanner Absensi Sekolah
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>Login Petugas</h3>
+            <p class="helper">
+                Masukkan identitas sekolah dan petugas. Kode sekolah/petugas boleh disimpan di perangkat ini; PIN tidak disimpan.
+            </p>
+
+            <label>
+                Kode Sekolah
+            </label>
+
+            <input
+                id="schoolCode"
+                type="text"
+                autocapitalize="characters"
+                autocomplete="organization"
+                placeholder="Contoh: SCH001"
+            >
+
+            <label>
+                Kode Petugas
+            </label>
+
+            <input
+                id="staffCode"
+                type="text"
+                autocapitalize="characters"
+                autocomplete="username"
+                placeholder="Contoh: PIKET01"
+            >
+
+            <label>
+                PIN Scanner
+            </label>
+
+            <input
+                id="pinScanner"
+                type="password"
+                inputmode="numeric"
+                placeholder="Masukkan PIN"
+            >
+
+            <button
+                id="btnLogin"
+                class="btn-primary"
+                onclick="loginScanner()"
+            >
+                MASUK SCANNER
+            </button>
+
+            <div
+                id="loginInfo"
+                class="loading"
+                style="margin-top:15px; display:none;">
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ===================================================== -->
+    <!-- SCANNER -->
+    <!-- ===================================================== -->
+
+    <section id="scannerSection">
+
+
+        <div class="header">
+
+            <h2>
+                📷 Scanner Absensi
+            </h2>
+
+            <p id="scannerIdentity">
+                GoSchool • Scanner Aktif
+            </p>
+
+            <button
+                class="btn-logout"
+                onclick="logoutScanner()"
+            >
+                Logout
+            </button>
+
+        </div>
+
+        <div
+    id="connectionStatus"
+    class="connection-status connection-online"
+>
+    🟢 Backend siap
+</div>
+
+
+
+        <!-- MODE QR -->
+
+        <div class="card">
+
+            <div class="mode-title">
+                MODE ABSENSI QR
+            </div>
+
+
+            <div id="modeAktif">
+
+                🟢 HADIR
+
+            </div>
+
+
+            <div class="mode-grid">
+
+                <button
+                    id="btnHadir"
+                    class="btn-hadir mode-selected"
+                    onclick="pilihMode('HADIR')"
+                >
+                    🟢 HADIR
+                </button>
+
+
+                <button
+                    id="btnTerlambat"
+                    class="btn-terlambat"
+                    onclick="pilihMode('TERLAMBAT')"
+                >
+                    🟠 TERLAMBAT
+                </button>
+
+            </div>
+
+            <div class="helper" style="margin:10px 0 2px;text-align:center;">
+                Pilih mode sebelum scan. Status pada saat QR terbaca akan dikunci ke task tersebut.
+            </div>
+
+            <div class="queue-status">
+
+                <div class="queue-pill">
+                    <strong id="qWaiting">0</strong>
+                    Antrean
+                </div>
+
+                <div class="queue-pill">
+                    <strong id="qActive">0</strong>
+                    Proses
+                </div>
+
+                <div class="queue-pill">
+                    <strong id="qSaved">0</strong>
+                    Tersimpan
+                </div>
+
+                <div class="queue-pill">
+                    <strong id="qInfo">0</strong>
+                    Info
+                </div>
+
+                <div class="queue-pill">
+                    <strong id="qFailed">0</strong>
+                    Gagal
+                </div>
+
+                <div class="queue-pill">
+                    <strong id="qCaptured">0</strong>
+                    Terbaca
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- CAMERA -->
+
+        <div class="card">
+
+            <div id="cameraInfo">
+
+                📱 Kamera Depan
+
+            </div>
+
+
+            <div id="reader"></div>
+
+
+            <button
+                class="btn-secondary"
+                style="margin-top:12px;"
+                onclick="gantiKamera()"
+            >
+                🔄 Ganti Kamera
+            </button>
+
+
+            <div class="helper"
+                 style="margin-top:10px; text-align:center;">
+
+                Sodorkan QR kartu ke kotak kamera.
+                Tidak perlu menekan tombol setelah setiap scan.
+
+            </div>
+
+        </div>
+
+
+
+        <!-- RESULT -->
+
+        <div id="hasil"></div>
+
+        <div class="card">
+
+    <h3 style="margin-top:0;">
+        ⚡ Aktivitas Scan
+    </h3>
+
+    <div
+        id="scanLog"
+        data-empty="1"
+    >
+        <div class="helper">
+            Belum ada QR yang diproses.
+        </div>
+    </div>
+
+</div>
+
+
+
+        <!-- MANUAL — belum diaktifkan pada QR Online Cutover V1 -->
+
+        <div class="card" style="display:none;">
+
+            <h3 class="manual-title">
+
+                ✍️ Input Manual
+
+            </h3>
+
+
+            <p class="helper">
+
+                Dipakai jika kartu rusak/tidak terbawa,
+                atau untuk mencatat Sakit dan Izin.
+
+            </p>
+
+
+            <label>
+                NISN / Student ID
+            </label>
+
+            <input
+                id="manualIdentifier"
+                type="text"
+                inputmode="numeric"
+                placeholder="Contoh: 0081234567"
+            >
+
+
+            <label>
+                Status
+            </label>
+
+            <select id="manualStatus">
+
+                <option value="SAKIT">
+                    SAKIT
+                </option>
+
+                <option value="IZIN">
+                    IZIN
+                </option>
+
+                <option value="HADIR">
+                    HADIR
+                </option>
+
+                <option value="TERLAMBAT">
+                    TERLAMBAT
+                </option>
+
+            </select>
+
+
+            <button
+                class="btn-primary"
+                onclick="catatManual()"
+            >
+                SIMPAN MANUAL
+            </button>
+
+        </div>
+
+
+
+        <!-- ALPHA — belum diaktifkan pada QR Online Cutover V1 -->
+
+        <div class="card" style="display:none;">
+
+            <h3>
+                🛑 Rekap Alpha
+            </h3>
+
+            <p class="helper">
+
+                Jalankan setelah waktu absensi pagi selesai.
+                Siswa aktif yang belum memiliki status hari ini
+                akan dicatat ALPHA.
+
+            </p>
+
+
+            <button
+                class="btn-danger"
+                onclick="rekapAlpha()"
+            >
+                SELESAI ABSENSI — REKAP ALPHA
+            </button>
+
+        </div>
+
+
+    </section>
+
+</div>
+
+
+
+<script>
+
+
+// ============================================================
+// CONFIG
+// ============================================================
+
+
+// PUBLIC GOSCHOOL API
+
+const API_URL =
+    "https://goschool-api-gateway.graphs-on98.workers.dev";
+
+let SCHOOL_CODE = "";
+let STAFF_CODE = "";
+
+// Dipakai untuk prefix request_id lokal setelah login.
+let SCHOOL_ID = "";
+
+
+
+// ============================================================
+// STATE
+// ============================================================
+
+// ============================================================
+// STATE V2 QUEUE
+// ============================================================
+
+let sessionToken =
+    "";
+
+
+let modeSekarang =
+    "HADIR";
+
+
+let kamera =
+    "environment";
+
+
+let qrScanner =
+    null;
+
+
+let kameraAktif =
+    false;
+
+
+let audioContext =
+    null;
+
+
+// ============================================================
+// QUEUE CONFIG
+// ============================================================
+
+const MAX_REQUEST_AKTIF =
+    2;
+
+
+const MAX_TOTAL_PENDING =
+    12;
+
+
+const COOLDOWN_QR_MS =
+    2500;
+
+
+// ============================================================
+// QUEUE STATE
+// ============================================================
+
+let antreanScan =
+    [];
+
+
+let requestAktif =
+    0;
+
+
+let kodeSedangDiproses =
+    new Set();
+
+
+let cooldownKode =
+    new Map();
+
+
+let operasiEksklusif =
+    false;
+
+
+let sessionSedangDitutup =
+    false;
+
+    // ============================================================
+// BACKEND CONNECTION STATE
+// ============================================================
+
+let backendReady =
+    navigator.onLine;
+
+
+let recoveryPromise =
+    null;
+
+
+let peringatanKoneksiTerakhir =
+    0;
+
+let lastBackendSuccessAt =
+    0;
+
+let peringatanAntreanTerakhir =
+    0;
+
+
+// ============================================================
+// STATISTIK SESI
+// ============================================================
+
+let statTertangkap =
+    0;
+
+
+let statTersimpan =
+    0;
+
+
+let statInfo =
+    0;
+
+
+let statGagal =
+    0;
+
+
+// ============================================================
+// TAMPILAN AWAL
+// ============================================================
+
+function tampilkanLoginAwal() {
+
+    document
+        .getElementById("loginSection")
+        .style.display = "block";
+
+
+    document
+        .getElementById("scannerSection")
+        .style.display = "none";
+
+}
+
+
+// ============================================================
+// AUDIO
+// ============================================================
+
+function initAudio() {
+
+    if (!audioContext) {
+
+        audioContext =
+            new (
+                window.AudioContext ||
+                window.webkitAudioContext
+            )();
+
+    }
+
+
+    if (
+        audioContext.state ===
+        "suspended"
+    ) {
+
+        audioContext.resume();
+
+    }
+
+}
+
+
+
+function beepSukses() {
+
+    bunyi(
+        880,
+        0.09
+    );
+
+}
+
+function beepTangkap() {
+
+    bunyi(
+        520,
+        0.04
+    );
+
+}
+
+
+function beepInfo() {
+
+    bunyi(
+        620,
+        0.09
+    );
+
+}
+
+
+
+function beepGagal() {
+
+    bunyi(
+        240,
+        0.13
+    );
+
+
+    setTimeout(
+        () => bunyi(200, 0.13),
+        160
+    );
+
+}
+
+
+
+function bunyi(
+    frequency,
+    duration
+) {
+
+    try {
+
+        initAudio();
+
+
+        const oscillator =
+            audioContext
+                .createOscillator();
+
+
+        const gain =
+            audioContext
+                .createGain();
+
+
+        oscillator.frequency.value =
+            frequency;
+
+
+        oscillator.connect(
+            gain
+        );
+
+
+        gain.connect(
+            audioContext.destination
+        );
+
+
+        gain.gain.value =
+            0.15;
+
+
+        oscillator.start();
+
+
+        oscillator.stop(
+            audioContext.currentTime
+            +
+            duration
+        );
+
+
+    } catch (e) {
+
+        console.log(
+            "Audio tidak tersedia.",
+            e
+        );
+
+    }
+
+}
+
+// ============================================================
+// RESET QUEUE
+// ============================================================
+
+function resetQueueState() {
+
+    antreanScan =
+        [];
+
+
+    requestAktif =
+        0;
+
+
+    kodeSedangDiproses
+        .clear();
+
+
+    cooldownKode
+        .clear();
+
+
+    operasiEksklusif =
+        false;
+
+
+    sessionSedangDitutup =
+        false;
+
+
+    statTertangkap =
+        0;
+
+
+    statTersimpan =
+        0;
+
+
+    statInfo =
+        0;
+
+
+    statGagal =
+        0;
+
+
+    updateQueueStatus();
+
+
+    const log =
+        document
+            .getElementById(
+                "scanLog"
+            );
+
+
+    if (log) {
+
+        log.dataset.empty =
+            "1";
+
+
+        log.innerHTML =
+            '<div class="helper">'
+            +
+            'Belum ada QR yang diproses.'
+            +
+            '</div>';
+
+    }
+
+}
+
+
+
+// ============================================================
+// UPDATE STATUS QUEUE
+// ============================================================
+
+function updateQueueStatus() {
+
+    const set =
+        function(
+            id,
+            value
+        ) {
+
+            const el =
+                document
+                    .getElementById(
+                        id
+                    );
+
+
+            if (el) {
+
+                el.textContent =
+                    value;
+
+            }
+
+        };
+
+
+    set(
+        "qWaiting",
+        antreanScan.length
+    );
+
+
+    set(
+        "qActive",
+        requestAktif
+    );
+
+
+    set(
+        "qSaved",
+        statTersimpan
+    );
+
+
+    set(
+        "qInfo",
+        statInfo
+    );
+
+
+    set(
+        "qFailed",
+        statGagal
+    );
+
+
+    set(
+        "qCaptured",
+        statTertangkap
+    );
+
+}
+
+
+
+// ============================================================
+// LOG SCANNER
+// ============================================================
+
+function tambahLog(
+    jenis,
+    judul,
+    detail
+) {
+
+    const log =
+        document
+            .getElementById(
+                "scanLog"
+            );
+
+
+    if (!log) {
+        return;
+    }
+
+
+    if (
+        log.dataset.empty ===
+        "1"
+    ) {
+
+        log.innerHTML =
+            "";
+
+
+        log.dataset.empty =
+            "0";
+
+    }
+
+
+    const item =
+        document
+            .createElement(
+                "div"
+            );
+
+
+    item.className =
+        "log-item log-" +
+        jenis;
+
+
+    const title =
+        document
+            .createElement(
+                "strong"
+            );
+
+
+    title.textContent =
+        judul;
+
+
+    const br =
+        document
+            .createElement(
+                "br"
+            );
+
+
+    const desc =
+        document
+            .createElement(
+                "span"
+            );
+
+
+    desc.textContent =
+        detail;
+
+
+    item.appendChild(
+        title
+    );
+
+
+    item.appendChild(
+        br
+    );
+
+
+    item.appendChild(
+        desc
+    );
+
+
+    log.prepend(
+        item
+    );
+
+
+    // Simpan maksimal
+    // 10 aktivitas terakhir.
+
+    while (
+        log.children.length >
+        10
+    ) {
+
+        log.removeChild(
+            log.lastChild
+        );
+
+    }
+
+}
+
+
+
+// ============================================================
+// PROSES ANTREAN
+// ============================================================
+
+function prosesAntreanScan() {
+
+    if (
+        operasiEksklusif ||
+        !sessionToken
+    ) {
+
+        return;
+
+    }
+
+
+    while (
+        requestAktif <
+        MAX_REQUEST_AKTIF
+        &&
+        antreanScan.length >
+        0
+    ) {
+
+        const task =
+            antreanScan.shift();
+
+
+        requestAktif++;
+
+
+        updateQueueStatus();
+
+
+        prosesSatuScan(
+            task
+        )
+        .finally(
+            function() {
+
+                requestAktif--;
+
+
+                kodeSedangDiproses
+                    .delete(
+                        task.identifier
+                    );
+
+
+                cooldownKode
+                    .set(
+                        task.identifier,
+                        Date.now()
+                    );
+
+
+                updateQueueStatus();
+
+
+                prosesAntreanScan();
+
+            }
+        );
+
+    }
+
+}
+
+
+
+// ============================================================
+// PROSES SATU QR KE BACKEND
+// ============================================================
+
+async function prosesSatuScan(
+    task
+) {
+
+    try {
+
+        const hasil =
+            await postApi({
+
+                action:
+                    "attendance",
+
+                school_id:
+                    SCHOOL_ID,
+
+                session_token:
+                    sessionToken,
+
+                identifier:
+                    task.identifier,
+
+                request_id:
+                    task.request_id,
+
+                status:
+                    task.status,
+
+                sumber:
+                    "QR"
+
+            });
+
+
+        if (
+            cekSessionHabis(
+                hasil
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        const siswa =
+            hasil.student ||
+            {};
+
+
+        const absen =
+            hasil.attendance ||
+            {};
+
+
+        // ====================================================
+        // RESPONSE OK
+        // ====================================================
+
+        if (hasil.ok) {
+
+
+            // ------------------------------------------------
+            // SUDAH PERNAH TERCATAT
+            // ------------------------------------------------
+
+            if (
+                hasil.code ===
+                "SUDAH_TERCATAT"
+            ) {
+
+                statInfo++;
+
+
+                beepInfo();
+
+
+                tampilHasil(
+                    "info",
+
+                    siswa.nama ||
+                    "SISWA",
+
+                    "SUDAH TERCATAT "
+                    +
+                    (
+                        absen.status ||
+                        ""
+                    )
+                );
+
+
+                tambahLog(
+                    "info",
+
+                    "ℹ️ "
+                    +
+                    (
+                        siswa.nama ||
+                        "SISWA"
+                    ),
+
+                    "Sudah tercatat "
+                    +
+                    (
+                        absen.status ||
+                        ""
+                    )
+                );
+
+
+            } else {
+
+                // ------------------------------------------------
+                // TERSIMPAN / STATUS DIPERBARUI
+                // ------------------------------------------------
+
+                statTersimpan++;
+
+
+                beepSukses();
+
+
+                tampilHasil(
+                    "success",
+
+                    siswa.nama ||
+                    "SISWA",
+
+                    (
+                        absen.status ||
+                        task.status
+                    )
+                    +
+                    " • "
+                    +
+                    (
+                        absen.jam ||
+                        ""
+                    )
+                );
+
+
+                tambahLog(
+                    "success",
+
+                    "✅ "
+                    +
+                    (
+                        siswa.nama ||
+                        "SISWA"
+                    ),
+
+                    (
+                        absen.status ||
+                        task.status
+                    )
+                    +
+                    (
+                        absen.jam
+                        ?
+                        " • " +
+                        absen.jam
+                        :
+                        ""
+                    )
+                );
+
+            }
+
+
+        } else {
+
+            // ====================================================
+            // DITOLAK BACKEND
+            // ====================================================
+
+            statGagal++;
+
+
+            beepGagal();
+
+
+            tampilHasil(
+                "error",
+
+                "DITOLAK",
+
+                hasil.message ||
+                hasil.code
+            );
+
+
+            tambahLog(
+                "error",
+
+                "❌ QR ditolak",
+
+                hasil.message ||
+                hasil.code ||
+                "Ditolak backend."
+            );
+
+        }
+
+
+    } catch (err) {
+
+    console.error(
+        err
+    );
+
+
+    statGagal++;
+
+
+    beepGagal();
+
+
+    tampilHasil(
+        "error",
+        "BELUM TERKONFIRMASI",
+        "Respons backend tidak diterima. Tunggu koneksi pulih lalu scan ulang QR."
+    );
+
+
+    tambahLog(
+        "error",
+
+        "⚠️ QR belum terkonfirmasi",
+
+        "Tunggu koneksi pulih. Gunakan request yang sama saat retry."
+    );
+
+
+    tandaiBackendBermasalah();
+
+
+
+    } finally {
+
+        updateQueueStatus();
+
+    }
+
+}
+
+// ============================================================
+// DISPLAY STATUS KONEKSI
+// ============================================================
+
+function tampilStatusKoneksi(
+    status,
+    pesan
+) {
+
+    const el =
+        document.getElementById(
+            "connectionStatus"
+        );
+
+
+    if (!el) {
+        return;
+    }
+
+
+    el.className =
+        "connection-status";
+
+
+    if (
+        status ===
+        "online"
+    ) {
+
+        el.classList.add(
+            "connection-online"
+        );
+
+        el.textContent =
+            "🟢 " + pesan;
+
+
+    } else if (
+        status ===
+        "checking"
+    ) {
+
+        el.classList.add(
+            "connection-checking"
+        );
+
+        el.textContent =
+            "🟡 " + pesan;
+
+
+    } else {
+
+        el.classList.add(
+            "connection-offline"
+        );
+
+        el.textContent =
+            "🔴 " + pesan;
+
+    }
+
+}
+
+// ============================================================
+// BACKEND BERHASIL DIHUBUNGI
+// ============================================================
+
+function tandaiBackendBerhasil() {
+
+    backendReady =
+        true;
+
+
+    lastBackendSuccessAt =
+        Date.now();
+
+
+    tampilStatusKoneksi(
+        "online",
+        "Backend siap"
+    );
+
+}
+
+// ============================================================
+// BACKEND HEALTH CHECK
+// ============================================================
+
+async function cekBackendSekali() {
+
+    if (!navigator.onLine) {
+        return false;
+    }
+
+    const controller =
+        new AbortController();
+
+    const timeout =
+        setTimeout(
+            () => controller.abort(),
+            12000
+        );
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL + "/health?_ts=" + Date.now(),
+                {
+                    method: "GET",
+                    cache: "no-store",
+                    signal: controller.signal
+                }
+            );
+
+        const hasil =
+            await response.json();
+
+        return (
+            response.ok &&
+            hasil.ok === true &&
+            hasil.code === "API_ONLINE"
+        );
+
+    } catch (err) {
+
+        console.warn(
+            "Health backend gagal:",
+            err
+        );
+
+        return false;
+
+    } finally {
+
+        clearTimeout(timeout);
+
+    }
+
+}
+
+
+
+// ============================================================
+// PEMULIHAN BACKEND
+// ============================================================
+
+async function pulihkanBackend() {
+
+    if (!navigator.onLine) {
+
+        backendReady =
+            false;
+
+
+        tampilStatusKoneksi(
+            "offline",
+            "Internet terputus"
+        );
+
+
+        return false;
+
+    }
+
+
+    // Kalau recovery sedang berjalan,
+    // jangan membuat recovery kedua.
+    if (recoveryPromise) {
+
+        return recoveryPromise;
+
+    }
+
+
+    const recoveryDimulaiAt =
+        Date.now();
+
+
+    recoveryPromise =
+        (async function() {
+
+            backendReady =
+                false;
+
+
+            tampilStatusKoneksi(
+                "checking",
+                "Memeriksa backend..."
+            );
+
+
+            for (
+                let attempt = 1;
+                attempt <= 3;
+                attempt++
+            ) {
+
+                console.log(
+                    "Recovery backend attempt:",
+                    attempt
+                );
+
+
+                const sehat =
+                    await cekBackendSekali();
+
+
+                if (sehat) {
+
+                    tandaiBackendBerhasil();
+
+
+                    console.log(
+                        "✅ BACKEND READY"
+                    );
+
+
+                    return true;
+
+                }
+
+
+                // ====================================================
+                // ANTI RACE CONDITION
+                //
+                // Bisa saja health check lambat/gagal,
+                // tetapi request POST lain sudah sukses
+                // setelah recovery ini dimulai.
+                //
+                // Kalau begitu backend sebenarnya hidup.
+                // ====================================================
+
+                if (
+                    lastBackendSuccessAt >
+                    recoveryDimulaiAt
+                ) {
+
+                    backendReady =
+                        true;
+
+
+                    tampilStatusKoneksi(
+                        "online",
+                        "Backend siap"
+                    );
+
+
+                    console.log(
+                        "✅ Recovery dibatalkan karena request lain sudah sukses."
+                    );
+
+
+                    return true;
+
+                }
+
+
+                if (
+                    attempt < 3
+                ) {
+
+                    await new Promise(
+                        resolve =>
+                            setTimeout(
+                                resolve,
+                                1500
+                            )
+                    );
+
+                }
+
+            }
+
+
+            // Periksa SEKALI LAGI sebelum
+            // menyatakan backend tidak siap.
+            //
+            // Ini penting jika request lain sukses
+            // persis ketika health check terakhir berjalan.
+            if (
+                lastBackendSuccessAt >
+                recoveryDimulaiAt
+            ) {
+
+                backendReady =
+                    true;
+
+
+                tampilStatusKoneksi(
+                    "online",
+                    "Backend siap"
+                );
+
+
+                return true;
+
+            }
+
+
+            backendReady =
+                false;
+
+
+            tampilStatusKoneksi(
+                "offline",
+                "Backend belum terjangkau"
+            );
+
+
+            console.warn(
+                "Backend belum pulih."
+            );
+
+
+            return false;
+
+        })();
+
+
+    try {
+
+        return await recoveryPromise;
+
+    } finally {
+
+        recoveryPromise =
+            null;
+
+    }
+
+}
+
+
+
+// ============================================================
+// TANDAI KONEKSI BERMASALAH
+// ============================================================
+
+function tandaiBackendBermasalah() {
+
+    backendReady =
+        false;
+
+
+    if (!navigator.onLine) {
+
+        tampilStatusKoneksi(
+            "offline",
+            "Internet terputus"
+        );
+
+
+        return;
+
+    }
+
+
+    tampilStatusKoneksi(
+        "checking",
+        "Koneksi terganggu • memeriksa..."
+    );
+
+
+    if (!recoveryPromise) {
+
+        setTimeout(
+            () => {
+
+                pulihkanBackend();
+
+            },
+            700
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// NETWORK EVENTS
+// ============================================================
+
+window.addEventListener(
+    "offline",
+    function() {
+
+        backendReady =
+            false;
+
+
+        console.warn(
+            "📴 DEVICE OFFLINE"
+        );
+
+
+        tampilStatusKoneksi(
+            "offline",
+            "Internet terputus"
+        );
+
+    }
+);
+
+
+window.addEventListener(
+    "online",
+    function() {
+
+        backendReady =
+            false;
+
+
+        console.log(
+            "🌐 Internet kembali. Memeriksa backend..."
+        );
+
+
+        tampilStatusKoneksi(
+            "checking",
+            "Internet kembali • memeriksa backend..."
+        );
+
+
+        pulihkanBackend();
+
+    }
+);
+
+
+
+// ============================================================
+// TRANSACTION REQUEST ID V1
+// ============================================================
+
+function buatRequestIdAttendance() {
+
+    let unik = "";
+
+    if (
+        window.crypto &&
+        typeof window.crypto.randomUUID ===
+        "function"
+    ) {
+
+        unik =
+            window.crypto.randomUUID();
+
+    } else {
+
+        unik =
+            Date.now().toString(36)
+            +
+            "-"
+            +
+            Math.random()
+                .toString(36)
+                .slice(2, 14);
+
+    }
+
+
+    return (
+        "ATTREQ-"
+        +
+        SCHOOL_ID
+        +
+        "-"
+        +
+        unik
+    );
+
+}
+
+
+// ============================================================
+// API
+// ============================================================
+
+async function postApi(data) {
+
+    const mulaiKeseluruhan =
+        performance.now();
+
+    const payloadKirim = {
+        ...(data || {})
+    };
+
+    const action =
+        String(payloadKirim.action || "")
+        .trim()
+        .toLowerCase();
+
+    if (
+        action === "attendance" &&
+        !payloadKirim.request_id
+    ) {
+        payloadKirim.request_id =
+            buatRequestIdAttendance();
+    }
+
+    let timeoutMs = 12000;
+    let maxAttempts = 2;
+
+    if (action === "login_scanner") {
+        timeoutMs = 15000;
+        maxAttempts = 2;
+    }
+
+    if (action === "logout_scanner") {
+        timeoutMs = 10000;
+        maxAttempts = 1;
+    }
+
+    // Manual attendance dan rekap alpha belum dipasang pada Worker publik fase ini.
+    if (
+        action === "rekap_alpha" ||
+        (
+            action === "attendance" &&
+            String(payloadKirim.sumber || "").toUpperCase() === "MANUAL"
+        )
+    ) {
+        return {
+            ok: false,
+            code: "FEATURE_NOT_READY",
+            message: "Fitur ini belum diaktifkan pada GoSchool Scanner V1."
+        };
+    }
+
+    let errorTerakhir = null;
+
+    for (
+        let attempt = 1;
+        attempt <= maxAttempts;
+        attempt++
+    ) {
+
+        const mulaiAttempt =
+            performance.now();
+
+        const controller =
+            new AbortController();
+
+        const timeoutId =
+            setTimeout(
+                () => controller.abort(),
+                timeoutMs
+            );
+
+        try {
+
+            let endpoint = "";
+            let body = null;
+            const headers = {
+                "Content-Type": "application/json"
+            };
+
+            if (action === "login_scanner") {
+
+                endpoint = "/auth/login";
+                body = {
+                    school_code: SCHOOL_CODE,
+                    staff_code: STAFF_CODE,
+                    pin: payloadKirim.pin
+                };
+
+            } else if (action === "logout_scanner") {
+
+                endpoint = "/auth/logout";
+                headers.Authorization =
+                    "Bearer " + sessionToken;
+                body = {};
+
+            } else if (action === "attendance") {
+
+                endpoint = "/attendance/qr";
+                headers.Authorization =
+                    "Bearer " + sessionToken;
+                body = {
+                    request_id: payloadKirim.request_id,
+                    card_token: payloadKirim.identifier,
+                    status: payloadKirim.status
+                };
+
+            } else {
+
+                return {
+                    ok: false,
+                    code: "ACTION_NOT_SUPPORTED",
+                    message: "Action belum didukung GoSchool Scanner V1."
+                };
+
+            }
+
+            const response =
+                await fetch(
+                    API_URL + endpoint,
+                    {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify(body),
+                        cache: "no-store",
+                        signal: controller.signal
+                    }
+                );
+
+            clearTimeout(timeoutId);
+
+            const text =
+                await response.text();
+
+            let hasil;
+
+            try {
+                hasil = JSON.parse(text);
+            } catch {
+                throw new Error("RESPONSE_NON_JSON");
+            }
+
+            // Compatibility alias agar UI scanner lama tidak perlu dirombak besar.
+            if (hasil.student) {
+                if (!hasil.student.nama && hasil.student.full_name) {
+                    hasil.student.nama = hasil.student.full_name;
+                }
+            }
+
+            if (hasil.attendance) {
+                if (!hasil.attendance.jam && hasil.attendance.recorded_at) {
+                    try {
+                        hasil.attendance.jam =
+                            new Intl.DateTimeFormat(
+                                "id-ID",
+                                {
+                                    timeZone: "Asia/Jakarta",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    second: "2-digit",
+                                    hour12: false
+                                }
+                            ).format(
+                                new Date(hasil.attendance.recorded_at)
+                            );
+                    } catch {
+                        hasil.attendance.jam = "";
+                    }
+                }
+            }
+
+            hasil.attempt_ms =
+                Math.round(
+                    performance.now() - mulaiAttempt
+                );
+
+            hasil.total_ms =
+                Math.round(
+                    performance.now() - mulaiKeseluruhan
+                );
+
+            hasil.transport_attempt =
+                attempt;
+
+            console.log(
+                "GoSchool Cloudflare",
+                {
+                    action,
+                    attempt,
+                    http_status: response.status,
+                    attempt_ms: hasil.attempt_ms,
+                    total_ms: hasil.total_ms,
+                    server_ms: hasil.server_ms ?? null,
+                    code: hasil.code,
+                    replayed: hasil?.ack?.replayed ?? null
+                }
+            );
+
+            tandaiBackendBerhasil();
+
+            return hasil;
+
+        } catch (err) {
+
+            clearTimeout(timeoutId);
+            errorTerakhir = err;
+
+            console.warn(
+                "POST Cloudflare gagal",
+                {
+                    action,
+                    attempt,
+                    error: err?.name === "AbortError"
+                        ? "TIMEOUT"
+                        : (err?.message || "TRANSPORT_ERROR")
+                }
+            );
+
+            if (attempt < maxAttempts) {
+                await new Promise(
+                    resolve => setTimeout(resolve, 600)
+                );
+                continue;
+            }
+
+        }
+
+    }
+
+    console.error(
+        "POST gagal setelah seluruh percobaan.",
+        errorTerakhir
+    );
+
+    throw new Error(
+        "Backend Cloudflare tidak dapat dihubungi setelah retry."
+    );
+
+}
+
+
+
+// ============================================================
+// LOGIN
+// ============================================================
+
+async function loginScanner() {
+
+    initAudio();
+
+    const schoolCode =
+        document.getElementById("schoolCode").value.trim().toUpperCase();
+
+    const staffCode =
+        document.getElementById("staffCode").value.trim().toUpperCase();
+
+    if (!schoolCode || !staffCode) {
+        alert("Kode Sekolah dan Kode Petugas wajib diisi.");
+        return;
+    }
+
+    SCHOOL_CODE = schoolCode;
+    STAFF_CODE = staffCode;
+    SCHOOL_ID = schoolCode;
+
+    try {
+        localStorage.setItem("goschool_scanner_school_code", SCHOOL_CODE);
+        localStorage.setItem("goschool_scanner_staff_code", STAFF_CODE);
+    } catch (e) {
+        console.log("Preferensi login tidak dapat disimpan.", e);
+    }
+
+    const identity = document.getElementById("scannerIdentity");
+    if (identity) {
+        identity.textContent = SCHOOL_CODE + " • " + STAFF_CODE;
+    }
+
+
+    const pin =
+        document
+            .getElementById(
+                "pinScanner"
+            )
+            .value
+            .trim();
+
+
+    const info =
+        document
+            .getElementById(
+                "loginInfo"
+            );
+
+
+    const btn =
+        document
+            .getElementById(
+                "btnLogin"
+            );
+
+
+    if (!pin) {
+
+        alert(
+            "Masukkan PIN scanner."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !API_URL.startsWith("https://") ||
+        !API_URL.includes("workers.dev")
+    ) {
+
+        alert(
+            "API_URL Cloudflare Worker belum valid."
+        );
+
+        return;
+
+    }
+
+    if (
+    !navigator.onLine
+) {
+
+    info.style.display =
+        "block";
+
+    info.textContent =
+        "❌ Internet tidak tersedia.";
+
+    beepGagal();
+
+    return;
+
+}
+
+
+if (
+    !backendReady
+) {
+
+    info.style.display =
+        "block";
+
+    info.textContent =
+        "Memulihkan koneksi backend...";
+
+
+    const siap =
+        await pulihkanBackend();
+
+
+    if (!siap) {
+
+        info.textContent =
+            "❌ Backend belum dapat dihubungi. Coba beberapa saat lagi.";
+
+        beepGagal();
+
+        return;
+
+    }
+
+}
+
+    btn.disabled =
+        true;
+
+
+    info.style.display =
+        "block";
+
+
+    info.textContent =
+        "Menghubungi backend...";
+
+
+    try {
+
+        const hasil =
+            await postApi({
+
+                action:
+                    "login_scanner",
+
+                pin:
+                    pin
+
+            });
+
+
+        if (!hasil.ok) {
+
+            info.textContent =
+                "❌ " +
+                (hasil.message || hasil.code || "Login ditolak.");
+
+            beepGagal();
+
+            return;
+
+        }
+
+
+        sessionToken =
+            hasil.session_token;
+
+            resetQueueState();
+
+
+        document
+            .getElementById(
+                "pinScanner"
+            )
+            .value =
+            "";
+
+
+        document
+            .getElementById(
+                "loginSection"
+            )
+            .style.display =
+            "none";
+
+
+        document
+            .getElementById(
+                "scannerSection"
+            )
+            .style.display =
+            "block";
+
+
+        pilihMode(
+            "HADIR"
+        );
+
+
+        beepSukses();
+
+
+        await mulaiKamera();
+
+
+    } catch (err) {
+
+        console.error(err);
+
+
+        info.textContent =
+            "❌ Gagal terhubung ke backend.";
+
+
+        beepGagal();
+
+    } finally {
+
+        btn.disabled =
+            false;
+
+    }
+
+}
+
+
+
+// ============================================================
+// LOGOUT
+// ============================================================
+
+async function logoutScanner() {
+
+    if (
+    operasiEksklusif ||
+    requestAktif > 0 ||
+    antreanScan.length > 0
+) {
+
+    alert(
+
+        "Masih ada proses absensi.\n\n"
+        +
+        "Tunggu Antrean dan Proses menjadi 0 sebelum Logout."
+
+    );
+
+
+    return;
+
+}
+    try {
+
+        if (
+            sessionToken
+        ) {
+
+            await postApi({
+
+                action:
+                    "logout_scanner"
+
+            });
+
+        }
+
+    } catch (e) {
+
+        console.log(e);
+
+    }
+
+
+    sessionToken =
+        "";
+
+
+    await hentikanKamera();
+
+
+    document
+        .getElementById(
+            "scannerSection"
+        )
+        .style.display =
+        "none";
+
+
+    document
+        .getElementById(
+            "loginSection"
+        )
+        .style.display =
+        "block";
+
+
+    document
+        .getElementById(
+            "loginInfo"
+        )
+        .style.display =
+        "none";
+
+}
+
+
+
+// ============================================================
+// MODE QR
+// ============================================================
+
+function pilihMode(
+    mode
+) {
+
+    modeSekarang =
+        mode;
+
+
+    const hadir =
+        document
+            .getElementById(
+                "btnHadir"
+            );
+
+
+    const terlambat =
+        document
+            .getElementById(
+                "btnTerlambat"
+            );
+
+
+    hadir.classList.remove(
+        "mode-selected"
+    );
+
+
+    terlambat.classList.remove(
+        "mode-selected"
+    );
+
+
+    const indikator =
+        document
+            .getElementById(
+                "modeAktif"
+            );
+
+
+    if (
+        mode ===
+        "HADIR"
+    ) {
+
+        hadir.classList.add(
+            "mode-selected"
+        );
+
+
+        indikator.innerHTML =
+            "🟢 HADIR";
+
+
+        indikator.style.background =
+            "#dcfce7";
+
+
+        indikator.style.color =
+            "#166534";
+
+
+    } else {
+
+        terlambat.classList.add(
+            "mode-selected"
+        );
+
+
+        indikator.innerHTML =
+            "🟠 TERLAMBAT";
+
+
+        indikator.style.background =
+            "#fef3c7";
+
+
+        indikator.style.color =
+            "#92400e";
+
+    }
+
+}
+
+
+
+// ============================================================
+// CAMERA
+// ============================================================
+
+async function mulaiKamera() {
+
+    const info =
+        document
+            .getElementById(
+                "cameraInfo"
+            );
+
+
+    try {
+
+        if (!qrScanner) {
+
+            qrScanner =
+                new Html5Qrcode(
+                    "reader",
+                    {
+                        formatsToSupport: [
+                            Html5QrcodeSupportedFormats
+                                .QR_CODE
+                        ]
+                    },
+                    false
+                );
+
+        }
+
+
+        info.textContent =
+            kamera === "user"
+            ?
+            "📱 Kamera Depan"
+            :
+            "📷 Kamera Belakang";
+
+
+        await qrScanner.start(
+
+            {
+                facingMode:
+                    kamera
+            },
+
+            {
+                fps:
+                    12,
+
+                qrbox:
+                    function(
+                        width,
+                        height
+                    ) {
+
+                        const size =
+                            Math.floor(
+                                Math.min(
+                                    width,
+                                    height
+                                )
+                                *
+                                0.70
+                            );
+
+
+                        return {
+
+                            width:
+                                size,
+
+                            height:
+                                size
+
+                        };
+
+                    }
+
+            },
+
+            onScanSuccess,
+
+            function() {
+
+                // Error frame scan
+                // sengaja diabaikan.
+                // Ini normal ketika QR
+                // belum ada di kamera.
+
+            }
+
+        );
+
+
+        kameraAktif =
+            true;
+
+
+    } catch (err) {
+
+        console.error(err);
+
+
+        kameraAktif =
+            false;
+
+
+        info.textContent =
+            "❌ Kamera gagal dibuka";
+
+
+        tampilHasil(
+            "error",
+            "KAMERA TIDAK TERSEDIA",
+            "Izinkan akses kamera lalu coba lagi."
+        );
+
+    }
+
+}
+
+
+
+async function hentikanKamera() {
+
+    if (
+        !qrScanner ||
+        !kameraAktif
+    ) {
+        return;
+    }
+
+
+    try {
+
+        await qrScanner.stop();
+
+
+        kameraAktif =
+            false;
+
+
+    } catch (e) {
+
+        console.log(e);
+
+    }
+
+}
+
+
+
+async function gantiKamera() {
+
+    if (
+        operasiEksklusif
+    ) {
+
+        return;
+
+    }
+
+
+    await hentikanKamera();
+
+
+    kamera =
+        kamera === "user"
+        ?
+        "environment"
+        :
+        "user";
+
+
+    await mulaiKamera();
+
+}
+
+
+
+// ============================================================
+// QR SUCCESS
+// ============================================================
+function onScanSuccess(
+    decodedText
+) {
+
+    const identifier =
+        String(
+            decodedText || ""
+        )
+        .trim();
+
+
+    if (!identifier) {
+        return;
+    }
+
+
+    if (
+        !sessionToken ||
+        operasiEksklusif ||
+        sessionSedangDitutup
+    ) {
+
+        return;
+
+    }
+
+    
+
+    const sekarang =
+        Date.now();
+
+        
+        // ========================================================
+// BACKEND BELUM SIAP
+// ========================================================
+
+if (
+    !navigator.onLine ||
+    !backendReady
+) {
+
+    const sekarang =
+        Date.now();
+
+
+    // Hindari beep/error spam karena kamera
+    // membaca QR berkali-kali per detik.
+    if (
+        sekarang -
+        peringatanKoneksiTerakhir
+        >
+        1500
+    ) {
+
+        peringatanKoneksiTerakhir =
+            sekarang;
+
+
+        beepGagal();
+
+
+        if (!navigator.onLine) {
+
+    tampilStatusKoneksi(
+        "offline",
+        "Internet terputus • QR belum dikirim"
+    );
+
+} else {
+
+    tampilStatusKoneksi(
+        "checking",
+        "Backend belum siap • tunggu sebentar"
+    );
+
+}
+
+    }
+
+
+    if (
+        navigator.onLine &&
+        !recoveryPromise
+    ) {
+
+        pulihkanBackend();
+
+    }
+
+
+    return;
+
+}
+
+
+    // ========================================================
+    // QR YANG SAMA SEDANG DI ANTREAN / REQUEST
+    // ========================================================
+
+    if (
+        kodeSedangDiproses
+            .has(
+                identifier
+            )
+    ) {
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // COOLDOWN SESUDAH SELESAI
+    // ========================================================
+
+    const scanTerakhir =
+        cooldownKode.get(
+            identifier
+        ) || 0;
+
+
+    if (
+        sekarang -
+        scanTerakhir <
+        COOLDOWN_QR_MS
+    ) {
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // ANTREAN PENUH
+    // ========================================================
+
+    if (
+        (
+            requestAktif +
+            antreanScan.length
+        )
+        >=
+        MAX_TOTAL_PENDING
+    ) {
+
+        if (
+            sekarang -
+            peringatanAntreanTerakhir
+            >
+            1500
+        ) {
+
+            peringatanAntreanTerakhir =
+                sekarang;
+
+
+            beepGagal();
+
+
+            tampilHasil(
+                "error",
+
+                "ANTREAN PENUH",
+
+                "Tahan sebentar sampai proses berkurang."
+            );
+
+        }
+
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // CAPTURE STATUS SAAT QR DIBACA
+    //
+    // Jadi kalau petugas ganti mode sesudah ini,
+    // task yang sudah masuk antrean tidak berubah.
+    // ========================================================
+
+    const task = {
+
+        identifier:
+            identifier,
+
+        request_id:
+            buatRequestIdAttendance(),
+
+        status:
+            modeSekarang,
+
+        captured_at:
+            sekarang
+
+    };
+
+
+    kodeSedangDiproses
+        .add(
+            identifier
+        );
+
+
+    cooldownKode
+        .set(
+            identifier,
+            sekarang
+        );
+
+
+    antreanScan.push(
+        task
+    );
+
+
+    statTertangkap++;
+
+
+    // Bunyi cepat:
+    // hanya berarti QR berhasil terbaca.
+
+    beepTangkap();
+
+
+    tambahLog(
+        "capture",
+
+        "📥 QR kartu terbaca",
+
+        task.status +
+        " • masuk antrean"
+    );
+
+
+    updateQueueStatus();
+
+
+    // Kamera TIDAK dihentikan.
+    // Langsung bisa membaca QR berikutnya.
+
+    prosesAntreanScan();
+
+}
+
+
+
+
+// ============================================================
+// MANUAL
+// ============================================================
+
+async function catatManual() {
+
+    if (
+        operasiEksklusif
+    ) {
+        return;
+    }
+
+
+    if (
+        requestAktif > 0 ||
+        antreanScan.length > 0
+    ) {
+
+        alert(
+            "Masih ada antrean QR yang diproses.\n\n"
+            +
+            "Tunggu sampai Antrean dan Proses menjadi 0."
+        );
+
+        return;
+
+    }
+
+
+    const identifier =
+        document
+            .getElementById(
+                "manualIdentifier"
+            )
+            .value
+            .trim();
+
+
+    const status =
+        document
+            .getElementById(
+                "manualStatus"
+            )
+            .value;
+
+
+    if (!identifier) {
+
+        alert(
+            "Masukkan NISN atau Student ID."
+        );
+
+        return;
+
+    }
+
+
+    operasiEksklusif =
+        true;
+
+
+    tampilHasil(
+        "info",
+        "MEMPROSES...",
+        "Menyimpan status manual."
+    );
+
+
+    try {
+
+        const hasil =
+            await postApi({
+
+                action:
+                    "attendance",
+
+                school_id:
+                    SCHOOL_ID,
+
+                session_token:
+                    sessionToken,
+
+                identifier:
+                    identifier,
+
+                status:
+                    status,
+
+                sumber:
+                    "MANUAL"
+
+            });
+
+
+        if (
+            cekSessionHabis(
+                hasil
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        if (hasil.ok) {
+
+            beepSukses();
+
+
+            const siswa =
+                hasil.student ||
+                {};
+
+
+            const absen =
+                hasil.attendance ||
+                {};
+
+
+            tampilHasil(
+                "success",
+
+                siswa.nama ||
+                "SISWA",
+
+                (
+                    absen.status ||
+                    status
+                )
+                +
+                " • "
+                +
+                (
+                    absen.jam ||
+                    ""
+                )
+            );
+
+
+            tambahLog(
+                "success",
+
+                "✍️ "
+                +
+                (
+                    siswa.nama ||
+                    identifier
+                ),
+
+                "MANUAL • "
+                +
+                (
+                    absen.status ||
+                    status
+                )
+            );
+
+
+            document
+                .getElementById(
+                    "manualIdentifier"
+                )
+                .value =
+                "";
+
+
+        } else {
+
+            beepGagal();
+
+
+            tampilHasil(
+                "error",
+                "DITOLAK",
+                hasil.message ||
+                hasil.code
+            );
+
+        }
+
+
+    } catch (err) {
+
+        console.error(
+            err
+        );
+
+
+        beepGagal();
+
+
+        tampilHasil(
+            "error",
+            "BELUM TERKONFIRMASI",
+            "Respons backend tidak diterima. Jangan input ulang dulu sampai koneksi pulih."
+        );
+
+
+        tandaiBackendBermasalah();
+
+
+    } finally {
+
+        operasiEksklusif =
+            false;
+
+    }
+
+}
+
+
+
+// ============================================================
+// REKAP ALPHA
+// ============================================================
+
+async function rekapAlpha() {
+
+
+    if (
+    operasiEksklusif
+) {
+    return;
+}
+
+
+if (
+    requestAktif > 0 ||
+    antreanScan.length > 0
+) {
+
+    alert(
+
+        "BELUM BISA REKAP ALPHA.\n\n"
+        +
+        "Masih ada QR yang belum selesai diproses.\n\n"
+        +
+        "Antrean: "
+        +
+        antreanScan.length
+        +
+        "\n"
+        +
+        "Proses: "
+        +
+        requestAktif
+        +
+        "\n\n"
+        +
+        "Tunggu sampai keduanya 0."
+
+    );
+
+
+    return;
+
+}
+    const yakin =
+
+    
+        confirm(
+
+            "YAKIN SELESAI ABSENSI PAGI?\n\n"
+            +
+            "Semua siswa aktif yang belum memiliki "
+            +
+            "status hari ini akan dicatat ALPHA."
+
+        );
+
+
+    if (!yakin) {
+        return;
+    }
+
+
+    operasiEksklusif =
+        true;
+
+
+    tampilHasil(
+        "info",
+        "REKAP ALPHA...",
+        "Backend sedang memeriksa seluruh siswa."
+    );
+
+
+    try {
+
+        const hasil =
+            await postApi({
+
+                action:
+                    "rekap_alpha",
+
+                school_id:
+                    SCHOOL_ID,
+
+                session_token:
+                    sessionToken,
+
+                scope:
+                    "ALL"
+
+            });
+
+
+        if (
+            cekSessionHabis(
+                hasil
+            )
+        ) {
+            return;
+        }
+
+
+        if (hasil.ok) {
+
+            beepSukses();
+
+
+            const daftar =
+                hasil.alpha || [];
+
+
+            let namaAlpha =
+                daftar
+                    .slice(0,10)
+                    .map(
+                        (s, i) =>
+                        (i + 1)
+                        +
+                        ". "
+                        +
+                        s.nama
+                    )
+                    .join("<br>");
+
+
+            if (
+                daftar.length > 10
+            ) {
+
+                namaAlpha +=
+
+                    "<br>...dan "
+                    +
+                    (
+                        daftar.length - 10
+                    )
+                    +
+                    " siswa lainnya.";
+
+            }
+
+
+            tampilHasil(
+                "success",
+
+                "REKAP SELESAI",
+
+                "Wajib absen: "
+                +
+                hasil.total_wajib_absen
+
+                +
+                "<br>Sudah memiliki status: "
+                +
+                hasil.sudah_memiliki_status
+
+                +
+                "<br>Alpha dibuat: "
+                +
+                hasil.alpha_dibuat
+
+                +
+                (
+                    namaAlpha
+                    ?
+                    "<hr>" + namaAlpha
+                    :
+                    ""
+                )
+
+            );
+
+
+        } else {
+
+            beepGagal();
+
+
+            tampilHasil(
+                "error",
+                "REKAP GAGAL",
+                hasil.message ||
+                hasil.code
+            );
+
+        }
+
+
+    } catch (err) {
+
+        console.error(err);
+
+
+        beepGagal();
+
+
+        tampilHasil(
+            "error",
+            "REKAP GAGAL",
+            "Periksa koneksi internet."
+        );
+
+
+    } finally {
+
+        operasiEksklusif =
+    false;
+
+    }
+
+}
+
+
+
+// ============================================================
+// SESSION EXPIRED
+// ============================================================
+
+function cekSessionHabis(
+    hasil
+) {
+
+    const expired =
+        hasil &&
+        (
+            hasil.code ===
+            "SESSION_EXPIRED"
+            ||
+            hasil.code ===
+            "SESSION_KOSONG"
+            ||
+            hasil.code ===
+            "SESSION_INVALID"
+        );
+
+
+    if (!expired) {
+
+        return false;
+
+    }
+
+
+    // Bisa ada 2 request paralel
+    // yang sama-sama mendapat SESSION_EXPIRED.
+    // Popup cukup sekali.
+
+    if (
+        sessionSedangDitutup
+    ) {
+
+        return true;
+
+    }
+
+
+    sessionSedangDitutup =
+        true;
+
+
+    sessionToken =
+        "";
+
+
+    antreanScan =
+        [];
+
+
+    kodeSedangDiproses
+        .clear();
+
+
+    updateQueueStatus();
+
+
+    beepGagal();
+
+
+    alert(
+
+        "Sesi scanner sudah habis.\n\n"
+        +
+        "Silakan login kembali."
+
+    );
+
+
+    hentikanKamera();
+
+
+    document
+        .getElementById(
+            "scannerSection"
+        )
+        .style.display =
+        "none";
+
+
+    document
+        .getElementById(
+            "loginSection"
+        )
+        .style.display =
+        "block";
+
+
+    return true;
+
+}
+
+
+
+// ============================================================
+// DISPLAY RESULT
+// ============================================================
+
+function tampilHasil(
+    jenis,
+    judul,
+    detail
+) {
+
+    const el =
+        document
+            .getElementById(
+                "hasil"
+            );
+
+
+    el.className =
+        "";
+
+
+    if (
+        jenis ===
+        "success"
+    ) {
+
+        el.classList.add(
+            "hasil-success"
+        );
+
+
+    } else if (
+        jenis ===
+        "info"
+    ) {
+
+        el.classList.add(
+            "hasil-info"
+        );
+
+
+    } else {
+
+        el.classList.add(
+            "hasil-error"
+        );
+
+    }
+
+
+    el.innerHTML =
+
+        '<div class="nama-siswa">'
+        +
+        judul
+        +
+        '</div>'
+
+        +
+
+        '<div class="status-besar">'
+        +
+        detail
+        +
+        '</div>';
+
+}
+
+function muatIdentitasLogin() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+
+        const schoolFromUrl = String(params.get("school") || "").trim().toUpperCase();
+        const staffFromUrl = String(params.get("staff") || "").trim().toUpperCase();
+
+        const schoolSaved = localStorage.getItem("goschool_scanner_school_code") || "";
+        const staffSaved = localStorage.getItem("goschool_scanner_staff_code") || "";
+
+        document.getElementById("schoolCode").value =
+            schoolFromUrl || schoolSaved;
+
+        document.getElementById("staffCode").value =
+            staffFromUrl || staffSaved;
+    } catch (e) {
+        console.log("Preferensi login tidak dapat dimuat.", e);
+    }
+}
+
+muatIdentitasLogin();
+tampilkanLoginAwal();
+
+</script>
+
+</body>
+
+</html>
