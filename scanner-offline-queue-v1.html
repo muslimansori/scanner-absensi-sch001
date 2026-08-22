@@ -9,7 +9,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>GoSchool Scanner Absensi — Offline Queue V1</title>
+    <title>GoSchool Scanner Absensi — Offline Queue V1.1</title>
 
     <script
         src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js">
@@ -3270,9 +3270,7 @@ async function logoutScanner() {
     ) {
 
         alert(
-            "Masih ada request yang sedang dikirim.
-
-"
+            "Masih ada request yang sedang dikirim.\n\n"
             +
             "Tunggu Proses menjadi 0 sebelum Logout."
         );
@@ -3293,9 +3291,7 @@ async function logoutScanner() {
                 +
                 pendingPersistentCountForCurrent
                 +
-                " scan tersimpan di perangkat.
-
-"
+                " scan tersimpan di perangkat.\n\n"
                 +
                 "Logout sekarang? Data TIDAK hilang. "
                 +
@@ -4588,7 +4584,11 @@ async function registerOfflineShell() {
 
         const reg =
             await navigator.serviceWorker.register(
-                "./sw.js"
+                "./sw.js",
+                {
+                    updateViaCache:
+                        "none"
+                }
             );
 
 
