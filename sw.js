@@ -1,4 +1,4 @@
-const CACHE_NAME = "goschool-scanner-shell-v1";
+const CACHE_NAME = "goschool-scanner-shell-v1-1";
 
 const API_HOST_SUFFIX = ".workers.dev";
 
